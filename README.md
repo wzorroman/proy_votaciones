@@ -29,6 +29,7 @@ módulos funcionales:
 - Pillow (para subir imágenes)
 - xhtml2pdf (para generar el acta en PDF)
 
+![Dashboard Principal](docs/01%20dashboard.png)
 ---
 
 ## 🐳 Despliegue con Docker
@@ -294,6 +295,7 @@ python manage.py importar_padron /ruta/al/archivo.csv --proceso 1
 python manage.py importar_padron --file /ruta/completa/padron.csv --proceso 1
 python manage.py importar_padron /ruta/al/archivo.csv --proceso 1 --crear-mesas
 ```
+python manage.py importar_padron /home/wilson/CODE_MAIN/OPENCODE_WZ/proy_votaciones/recursos/votantes.csv
 
 **Requisitos del CSV:**
 
@@ -724,3 +726,34 @@ python manage.py seed_demo --admin-user=wilson --admin-pass=MiClave123
 - Las listas creadas por el comando **no traen foto**. Puedes subirlas
     
     desde `/admin/candidates/listacandidatura/` después.
+
+## Ejemplos varios
+ - Tabla de Grados y secciones
+ - <img src="docs/01 - 1 dashboard tabla mesas.png" alt="Dashboard Principal" width="600">
+ 
+ - Mesa de votaciones
+ - <img src="docs/02 Mesa Votaciones.png" alt="Mesa votacion" width="600">
+
+ - Mesa de votaciones - Mesa 2
+ - <img src="docs/02 - 1 Mesa Votaciones.png" alt="Mesa votacion 1" width="600">
+ 
+ - Reportes
+ - <img src="docs/03 reportes.png" alt="Reportes" width="600">
+ 
+ - Reportes 2  
+ - <img src="docs/03 - 1 reportes.png" alt="Reportes" width="600">
+
+ - Auditoria Padron  
+ - <img src="docs/04 Auditoria Padron.png" alt="Reportes" width="600">
+ 
+ - Panel votacion  
+ - <img src="docs/05 - Panel votacion.png" alt="Reportes" width="600">
+ 
+ - Panel votacion - Bloqueado  
+ - <img src="docs/05 - 1 Panel votacion_bloqueado.png" alt="Reportes" width="600">
+ 
+ - Cerrar votacion
+ - <img src="docs/06 Cerrar votacion.png" alt="Reportes" width="600">
+ 
+ - Cierre votacion
+ - <img src="docs/07 Cierra de votacion.png" alt="Reportes" width="600">
