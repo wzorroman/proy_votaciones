@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+
+{% block title %}Mesas de Votación · SIVOTES{% endblock %}
+
+{% block content %}
+
+<!-- Encabezado -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Mesas de Votación</h1>
+    <p class="text-secondary mb-0">
+      Proceso: <strong>{{ proceso.nombre }}</strong>
+    </p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    {% include 'voting/includes/_estado_proceso.html' %}
+    <button type="button" class="btn btn-sm btn-outline-dark"
+            data-bs-toggle="modal" data-bs-target="#modalReportes">
+      🖨️ Reportes
+    </button>
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      ← Volver al Panel
+    </a>
+  </div>
+</div>
+
+{% include "voting/includes/reportes_modal.html" %}
+
+<!-- KPIs globales -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card kpi-info h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Mesas Registradas</div>
+        <div class="kpi-value">{{ total_mesas }}</div>
+        <div class="small text-secondary">Activas en el proceso</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Electores Hábiles</div>
+        <div class="kpi-value">{{ total_habiles }}</div>
+        <div class="small text-secondary">En todas las mesas</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card kpi-success h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Votos Emitidos</div>
+        <div class="kpi-value text-success">{{ total_emitidos }}</div>
+        <div class="small text-secondary">En urnas</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card kpi-warning h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Participación Global</div>
+        <div class="kpi-value text-warning">
+          {% if total_habiles %}
+            {% widthratio total_emitidos total_habiles 100 %}%
+          {% else %}0%{% endif %}
+        </div>
+        <div class="small text-secondary">Sobre hábiles</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  <!-- ============================================================
+       PANEL IZQUIERDO: Lista de mesas
+       ============================================================ -->
+  <div class="col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="card-title text-secondary mb-0">
+            Mesas <span class="badge bg-secondary">{{ total_mesas }}</span>
+          </h5>
+          {% if perms.voters.view_mesadevotacion %}
+          <a href="{% url 'admin:voters_mesadevotacion_changelist' %}"
+             class="btn btn-sm btn-outline-primary">
+            + Gestionar
+          </a>
+          {% endif %}
+        </div>
+
+        {% if mesas %}
+          <div class="mesas-lista">
+            {% for m in mesas %}
+              <a href="?mesa={{ m.id }}"
+                 class="mesa-item {% if mesa_sel and mesa_sel.numero_mesa == m.numero_mesa %}mesa-item-active{% endif %}"
+                 data-mesa-num="{{ m.numero_mesa }}">
+                <div class="mesa-item-head">
+                  <span class="mesa-item-num">
+                    {% if mesa_sel and mesa_sel.numero_mesa == m.numero_mesa %}▶{% else %}○{% endif %}
+                  </span>
+                  <span class="mesa-item-title">{{ m.numero_mesa }}</span>
+                  <span class="mesa-item-pct">
+                    {{ m.porcentaje }}%
+                  </span>
+                </div>
+                <div class="mesa-item-desc">
+                  {{ m.descripcion|default:"Sin descripción" }}
+                </div>
+                <div class="mesa-item-progress">
+                  <div class="progress">
+                    <div class="progress-bar
+                        {% if m.porcentaje >= 75 %}bg-success
+                        {% else %}bg-primary{% endif %}"
+                        style="width: {{ m.porcentaje|unlocalize }}%;">
+                    </div>
+                  </div>
+                </div>
+                <div class="mesa-item-stats">
+                  <span><strong>{{ m.emitidos }}</strong> emitidos</span>
+                  <span class="text-secondary">de {{ m.habiles }}</span>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-secondary text-center py-4 mb-0">
+            No hay mesas registradas para este proceso.
+          </p>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       PANEL DERECHO: Detalle de la mesa seleccionada
+       ============================================================ -->
+  <div class="col-lg-7">
+    {% if mesa_sel %}
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+
+          <!-- Cabecera del detalle -->
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h4 class="mb-1">{{ mesa_sel.numero_mesa }}</h4>
+              <p class="text-secondary mb-0">
+                {{ mesa_sel.descripcion|default:"Sin descripción" }}
+              </p>
+            </div>
+            <span class="badge {% if mesa_sel.es_activo %}bg-success{% else %}bg-secondary{% endif %} fs-6">
+              {% if mesa_sel.es_activo %}ACTIVA{% else %}INACTIVA{% endif %}
+            </span>
+          </div>
+
+          <hr />
+
+          <!-- KPIs de la mesa -->
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <div class="mini-kpi">
+                <div class="mini-kpi-label">Hábiles</div>
+                <div class="mini-kpi-value">{{ mesa_habiles }}</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="mini-kpi mini-kpi-success">
+                <div class="mini-kpi-label">Emitidos</div>
+                <div class="mini-kpi-value">{{ mesa_emitidos }}</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="mini-kpi mini-kpi-warning">
+                <div class="mini-kpi-label">Faltantes</div>
+                <div class="mini-kpi-value">{{ mesa_faltantes }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra grande de participación -->
+          <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <small class="text-secondary">Participación de la mesa</small>
+              <strong class="text-primary">{{ mesa_pct }}%</strong>
+            </div>
+            <div class="progress" style="height: 1.4rem;">
+              <div class="progress-bar
+                {% if mesa_pct >= 75 %}bg-success
+                {% else %}bg-primary{% endif %}"
+                style="width: {{ mesa_pct|unlocalize }}%;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Distribución por grado/sección -->
+          <h6 class="text-secondary mb-2">
+            Distribución por grado / sección
+          </h6>
+
+          {% if detalle %}
+            <div class="table-responsive">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Grado</th>
+                    <th>Sec</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Emitidos</th>
+                    <th style="width:140px;">% Part.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for d in detalle %}
+                    <tr>
+                      <td><strong>{{ d.grado|default:"—" }}</strong></td>
+                      <td>{{ d.seccion|default:"—" }}</td>
+                      <td class="text-end">{{ d.total }}</td>
+                      <td class="text-end">{{ d.emitidos }}</td>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="progress flex-grow-1" style="height:.5rem;">
+                            <div class="progress-bar bg-primary"
+                                 style="width: {{ d.porcentaje|unlocalize }}%;"></div>
+                          </div>
+                          <small class="text-secondary"
+                                 style="min-width:2.5rem;text-align:right;">
+                            {{ d.porcentaje|unlocalize }}%
+                          </small>
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-secondary text-center py-4 mb-0">
+              Esta mesa no tiene estudiantes asignados.
+            </p>
+          {% endif %}
+
+          <hr />
+
+          <!-- Acciones del detalle -->
+          <div class="d-flex flex-wrap gap-2 justify-content-end">
+            <a href="{% url 'auditoria_padron' %}?mesa={{ mesa_sel.id }}"
+               class="btn btn-outline-secondary">
+              🔍 Ver padrón de esta mesa
+            </a>
+            {% if perms.voters.change_mesadevotacion %}
+            <a href="{% url 'admin:voters_mesadevotacion_change' mesa_sel.id %}"
+               class="btn btn-outline-primary">
+              ✏️ Editar mesa
+            </a>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    {% else %}
+      <div class="card shadow-sm h-100">
+        <div class="card-body d-flex align-items-center justify-content-center">
+          <p class="text-secondary mb-0">
+            Seleccione una mesa del listado para ver su detalle.
+          </p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ---------- Lista de mesas ---------- */
+  .mesas-lista {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    max-height: 560px;
+    overflow-y: auto;
+    padding-right: .25rem;
+  }
+  .mesa-item {
+    display: block;
+    padding: .75rem 1rem;
+    border-radius: .65rem;
+    border: 1px solid #e5e7eb;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .mesa-item:hover {
+    border-color: #93c5fd;
+    background: #f8faff;
+  }
+  .mesa-item-active {
+    border-color: #0d6efd;
+    background: #eff6ff;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, .12);
+  }
+  .mesa-item-head {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .25rem;
+  }
+  .mesa-item-num {
+    color: #0d6efd;
+    font-weight: 700;
+    width: 1rem;
+  }
+  .mesa-item-title {
+    font-weight: 700;
+    flex-grow: 1;
+  }
+  .mesa-item-pct {
+    font-weight: 700;
+    color: #0d6efd;
+  }
+  .mesa-item-desc {
+    font-size: .85rem;
+    color: #6b7280;
+    margin-bottom: .5rem;
+    padding-left: 1.5rem;
+  }
+  .mesa-item-progress .progress {
+    height: .45rem;
+    border-radius: .5rem;
+  }
+  .mesa-item-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: .78rem;
+    margin-top: .35rem;
+    padding-left: 1.5rem;
+    color: #374151;
+  }
+
+  /* ---------- Mini KPIs del detalle ---------- */
+  .mini-kpi {
+    background: #f8fafc;
+    border-left: 3px solid #0d6efd;
+    border-radius: .5rem;
+    padding: .6rem .75rem;
+  }
+  .mini-kpi-success { border-left-color: #198754; }
+  .mini-kpi-warning { border-left-color: #ffc107; }
+  .mini-kpi-label {
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #6b7280;
+  }
+  .mini-kpi-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  @media (max-width: 991px) {
+    .mesas-lista { max-height: none; }
+  }
+</style>
+{% endblock %}

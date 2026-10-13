@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kiosk de votación</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --primary: #1d4ed8;
+        --primary-dark: #173ea8;
+        --muted: #5b6473;
+        --danger: #d93025;
+        --shadow: rgba(15, 23, 42, 0.18);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #eef4ff 0%, var(--bg) 100%);
+        font-family: Arial, sans-serif;
+        color: #111827;
+      }
+
+      .container {
+        width: min(92vw, 620px);
+        background: var(--panel);
+        border-radius: 26px;
+        box-shadow: 0 30px 60px var(--shadow);
+        padding: 2rem;
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        text-align: center;
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
+      }
+
+      .subtitle {
+        margin: 0 0 1.5rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 1.1rem;
+      }
+
+      form {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .dni-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        max-width: 440px;
+        height: 72px;
+        text-align: center;
+        font-size: clamp(2rem, 3vw, 3rem);
+        letter-spacing: 0.3rem;
+        border: 3px solid #dfe8f7;
+        border-radius: 18px;
+        background: #f8fbff;
+        outline: none;
+      }
+
+      .keypad {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(70px, 1fr));
+        gap: 0.9rem;
+        margin-top: 0.75rem;
+      }
+
+      .key {
+        border: 0;
+        border-radius: 18px;
+        height: 72px;
+        font-size: 1.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        background: #ebf2ff;
+        color: #0f172a;
+        transition: transform 0.12s ease, background 0.12s ease;
+      }
+
+      .key:hover { background: #dfeaff; }
+      .key:active { transform: scale(0.98); }
+
+      .action {
+        display: flex;
+        gap: 0.8rem;
+        margin-top: 0.75rem;
+      }
+
+      .action button {
+        flex: 1;
+        border: 0;
+        border-radius: 18px;
+        height: 70px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .btn-submit {
+        background: var(--primary);
+        color: white;
+      }
+
+      .btn-submit:hover { background: var(--primary-dark); }
+
+      .btn-clear {
+        background: #e5e7eb;
+        color: #111827;
+      }
+
+      .error {
+        background: #fde7e7;
+        color: var(--danger);
+        border: 1px solid #f5b7b1;
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+        font-weight: 600;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      {% if proceso.logo %}
+        <div style="text-align:center; margin-bottom:1.25rem;">
+          <img src="{{ proceso.logo.url }}" alt="Logo institucional"
+              style="max-height:120px; max-width:80%; object-fit:contain;" />
+        </div>
+      {% endif %}
+
+      {% if proceso.nombre_institucion %}
+        <p style="text-align:center; color:#5b6473; font-weight:600;
+                  letter-spacing:.05em; text-transform:uppercase;
+                  font-size:.85rem; margin:0 0 .35rem;">
+          {{ proceso.nombre_institucion }}
+        </p>
+      {% endif %}
+      <h1>Validación de elector</h1>
+      <p class="subtitle">Ingrese su DNI para iniciar la votación</p>
+
+      {% if not proceso.votacion_iniciada %}
+        <div class="error" style="background:#fff4e5;color:#8a5300;border-color:#ffd8a8;">
+          La votación aún no ha comenzado. Espere las indicaciones del jurado.
+        </div>
+      {% elif proceso.votacion_pausada %}
+        <div class="error" style="background:#fff4e5;color:#8a5300;border-color:#ffd8a8;">
+          Votación pausada. Espere las indicaciones del jurado para continuar.
+        </div>
+      {% else %}
+      {% if error %}
+        <div class="error">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" id="dni-form">
+        {% csrf_token %}
+        <div class="dni-wrap">
+          <input
+            id="dni-input"
+            type="text"
+            name="dni"
+            value="{{ dni|default:'' }}"
+            inputmode="numeric"
+            pattern="\d{8}"
+            maxlength="8"
+            autofocus
+            aria-label="DNI"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="keypad" aria-label="Teclado numérico">
+          <button type="button" class="key" data-digit="1">1</button>
+          <button type="button" class="key" data-digit="2">2</button>
+          <button type="button" class="key" data-digit="3">3</button>
+          <button type="button" class="key" data-digit="4">4</button>
+          <button type="button" class="key" data-digit="5">5</button>
+          <button type="button" class="key" data-digit="6">6</button>
+          <button type="button" class="key" data-digit="7">7</button>
+          <button type="button" class="key" data-digit="8">8</button>
+          <button type="button" class="key" data-digit="9">9</button>
+          <button type="button" class="key" data-digit="0" style="grid-column: 2 / span 1;">0</button>
+          <button type="button" id="btn-borrar" class="key btn-clear" style="grid-column: 3 / span 1;">Borrar</button>
+        </div>
+
+        <div class="action">
+          <button type="button" id="btn-clear" class="btn-clear">Limpiar</button>
+          <button type="submit" class="btn-submit">INICIAR MI VOTACIÓN</button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+
+    <script>
+      const dniInput = document.getElementById('dni-input');
+      const form = document.getElementById('dni-form');
+
+      if (dniInput && form) {
+      document.querySelectorAll('[data-digit]').forEach((button) => {
+        button.addEventListener('click', () => {
+          if (dniInput.value.length >= 8) return;
+          dniInput.value += button.dataset.digit;
+          dniInput.focus();
+        });
+      });
+
+      document.getElementById('btn-borrar').addEventListener('click', () => {
+        dniInput.value = dniInput.value.slice(0, -1);
+        dniInput.focus();
+      });
+
+      document.getElementById('btn-clear').addEventListener('click', () => {
+        dniInput.value = '';
+        dniInput.focus();
+      });
+
+      form.addEventListener('submit', (event) => {
+        if (dniInput.value.length !== 8) {
+          event.preventDefault();
+          dniInput.focus();
+        }
+      });
+      }
+    </script>
+  </body>
+</html>

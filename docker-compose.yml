@@ -1,0 +1,30 @@
+services:
+  web:
+    build: .
+    image: proy-cole-votaciones:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      LOAD_DEMO_DATA: ${LOAD_DEMO_DATA:-false}
+      LOAD_DEMO_RESET: ${LOAD_DEMO_RESET:-false}
+      LOAD_DEMO_ADMIN_USER: ${LOAD_DEMO_ADMIN_USER:-admin}
+      LOAD_DEMO_ADMIN_PASS: ${LOAD_DEMO_ADMIN_PASS:-admin}
+      LOAD_DEMO_ADMIN_EMAIL: ${LOAD_DEMO_ADMIN_EMAIL:-admin@example.com}
+    ports:
+      - "8000:8000"
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+      - dbdata:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/').status in (200,302,301,404) else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  staticfiles:
+  media:
+  dbdata:

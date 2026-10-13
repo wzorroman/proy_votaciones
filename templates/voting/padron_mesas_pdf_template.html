@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Reporte de Padrón por Mesas</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 4.1cm 1.6cm 2cm 1.6cm;
+
+            /* ---------- Membrete + título repetidos en cada página ---------- */
+            @frame header_frame {
+                -pdf-frame-content: header_content;
+                left: 1.6cm;
+                right: 1.6cm;
+                top: 0.5cm;
+                height: 3.5cm;
+            }
+
+            /* ---------- Pie de página ---------- */
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 1.6cm;
+                right: 1.6cm;
+                bottom: 0.8cm;
+                height: 1.2cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 9.5pt;
+            color: #222;
+            line-height: 1.35;
+        }
+
+        /* ---------- Membrete (logo izq / institución der) ---------- */
+        #header_content .membrete {
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 5px;
+            margin-bottom: 6px;
+        }
+        #header_content .membrete-tabla {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #header_content .logo-cell {
+            width: 42%;
+            vertical-align: middle;
+            text-align: left;
+        }
+        #header_content .texto-cell {
+            width: 58%;
+            vertical-align: middle;
+            text-align: right;
+        }
+        #header_content .logo-escudo {
+            max-height: 70px;
+            max-width: 70px;
+        }
+        #header_content .logo-placeholder {
+            display: inline-block;
+            background: #0d6efd;
+            color: #ffffff;
+            padding: 8px 10px;
+            font-weight: bold;
+            font-size: 9pt;
+            letter-spacing: .06em;
+            border-radius: 4px;
+        }
+        #header_content .institucion {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 0 0 2px;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+        #header_content .sistema {
+            font-size: 8pt;
+            color: #6c757d;
+            margin: 0 0 3px;
+            letter-spacing: .05em;
+        }
+        #header_content .meta {
+            font-size: 8pt;
+            color: #495057;
+            margin: 0;
+        }
+
+        /* ---------- Título (repetido vía header) ---------- */
+        #header_content .titulo-bloque {
+            text-align: center;
+        }
+        #header_content .titulo-bloque h1 {
+            margin: 0 0 2px;
+            color: #0d6efd;
+            font-size: 13pt;
+            letter-spacing: .03em;
+        }
+        #header_content .titulo-bloque h2 {
+            margin: 0;
+            color: #333;
+            font-size: 9.5pt;
+            font-weight: normal;
+        }
+
+        /* ---------- Resumen global ---------- */
+        .resumen {
+            border: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+            padding: 6px 10px;
+            font-size: 9pt;
+            margin-bottom: 10px;
+        }
+        .resumen strong {
+            color: #0f172a;
+        }
+
+        /* ---------- Cada mesa: inicia una hoja nueva ---------- */
+        .mesa {
+            -pdf-keep-with-next: false;
+        }
+        .mesa.salto {
+            page-break-before: always;
+        }
+        .mesa-cab {
+            border-left: 4px solid #0d6efd;
+            background-color: #eef4ff;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            -pdf-keep-with-next: true;
+        }
+        .mesa-cab .titulo {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .mesa-cab .descripcion {
+            font-size: 9.5pt;
+            color: #495057;
+        }
+        .mesa-cab .habiles {
+            text-align: right;
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .mesa-cab-tabla {
+            width: 100%;
+        }
+
+        /* ---------- Tabla padrón ---------- */
+        table.padron {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.padron th {
+            background-color: #0d6efd;
+            color: #ffffff;
+            padding: 6px 8px;
+            text-align: left;
+            font-size: 9pt;
+            letter-spacing: .03em;
+            border: 1px solid #0d6efd;
+        }
+        table.padron td {
+            border: 1px solid #dee2e6;
+            padding: 4px 8px;
+            font-size: 9pt;
+        }
+        table.padron .num {
+            width: 6%;
+            text-align: center;
+        }
+        table.padron .dni {
+            width: 18%;
+            text-align: center;
+        }
+        table.padron .grado {
+            width: 14%;
+            text-align: center;
+        }
+
+        .aviso {
+            text-align: center;
+            color: #6c757d;
+            font-size: 9.5pt;
+            padding: 14px 0;
+        }
+
+        /* ---------- Sección SIN MESA ---------- */
+        .sin-mesa {
+            page-break-before: always;
+        }
+        .sin-mesa .titulo-seccion {
+            border-left: 4px solid #dc3545;
+            background-color: #fdeaea;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #7a1f1f;
+            -pdf-keep-with-next: true;
+        }
+
+        /* ---------- Footer ---------- */
+        #footer_content {
+            text-align: center;
+            font-size: 8pt;
+            color: #999;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 4px;
+        }
+        #footer_content .page {
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+         MEMBRETE (se repite en cada página vía @frame)
+         ============================================================ -->
+    <div id="header_content">
+        <div class="membrete">
+            <table class="membrete-tabla" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td class="logo-cell">
+                        {% if proceso.logo %}
+                            <img src="{{ proceso.logo.path }}"
+                                 alt="Logo institucional"
+                                 class="logo-escudo" />
+                        {% else %}
+                            <div class="logo-placeholder">SIVOTES</div>
+                        {% endif %}
+                    </td>
+                    <td class="texto-cell">
+                        {% if proceso.nombre_institucion %}
+                            <div class="institucion">{{ proceso.nombre_institucion }}</div>
+                        {% endif %}
+                        <div class="sistema">SIVOTES · Sistema de Votación Escolar</div>
+                        <div class="meta">Proceso: <strong>{{ proceso.nombre }}</strong></div>
+                        <div class="meta">Generado: {{ fecha_generado|date:"d/m/Y H:i" }}</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="titulo-bloque">
+            <h1>REPORTE DE PADRÓN POR MESAS</h1>
+            <h2>
+                {% if variante == "mesa" %}
+                    {{ proceso.nombre }} · Mesa: {{ mesas.0.numero_mesa }}{% if mesas.0.descripcion %} · {{ mesas.0.descripcion }}{% endif %}
+                {% elif variante == "sin_mesa" %}
+                    {{ proceso.nombre }} · Alumnos sin mesa asignada
+                {% else %}
+                    {{ proceso.nombre }}
+                {% endif %}
+            </h2>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         RESUMEN GLOBAL (solo en la variante "todas")
+         ============================================================ -->
+    {% if variante == "todas" %}
+    <!--
+    <div class="resumen">
+        <strong>Resumen:</strong>
+        Mesas de votación: <strong>{{ resumen.mesas }}</strong> ·
+        Total de hábiles: <strong>{{ resumen.habiles }}</strong> ·
+        Alumnos sin mesa: <strong>{{ resumen.sin_mesa }}</strong>
+    </div>
+    -->
+    {% endif %}
+
+    <!-- ============================================================
+         2. TABLAS POR MESA (una hoja nueva por mesa)
+         ============================================================ -->
+    {% for mesa in mesas %}
+    <div class="mesa{% if not forloop.first %} salto{% endif %}">
+        <div class="mesa-cab">
+            <table class="mesa-cab-tabla" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="text-align:left;">
+                        <span class="titulo">MESA DE VOTACIÓN: {{ mesa.numero_mesa }}</span>
+                        {% if mesa.descripcion %}<span class="descripcion"> · {{ mesa.descripcion }}</span>{% endif %}
+                    </td>
+                    <td class="habiles">HÁBILES: {{ mesa.habiles }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <table class="padron">
+            <thead>
+                <tr>
+                    <th class="num">N°</th>
+                    <th class="dni">DNI</th>
+                    <th>APELLIDOS Y NOMBRES</th>
+                    <th class="grado">GRADO/SEC</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in mesa.filas %}
+                <tr style="{% if fila.zebra %}background-color:#eef4ff;{% endif %}">
+                    <td class="num">{{ fila.numero }}</td>
+                    <td class="dni">{{ fila.dni }}</td>
+                    <td>{{ fila.nombre }}</td>
+                    <td class="grado">{{ fila.grado_seccion }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="aviso">Sin electores hábiles en esta mesa.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% empty %}
+    <p class="aviso">No hay mesas que coincidan con la selección.</p>
+    {% endfor %}
+
+    <!-- ============================================================
+         3. SECCIÓN SIN MESA (al final, hoja nueva)
+         ============================================================ -->
+    {% if variante == "todas" and sin_mesa %}
+    <div class="sin-mesa">
+        <div class="titulo-seccion">SIN MESA · ALUMNOS SIN MESA ASIGNADA ({{ sin_mesa|length }})</div>
+        <table class="padron">
+            <thead>
+                <tr>
+                    <th class="num">N°</th>
+                    <th class="dni">DNI</th>
+                    <th>APELLIDOS Y NOMBRES</th>
+                    <th class="grado">GRADO/SEC</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in sin_mesa %}
+                <tr style="{% if fila.zebra %}background-color:#eef4ff;{% endif %}">
+                    <td class="num">{{ fila.numero }}</td>
+                    <td class="dni">{{ fila.dni }}</td>
+                    <td>{{ fila.nombre }}</td>
+                    <td class="grado">{{ fila.grado_seccion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- ============================================================
+         FOOTER (fijo al pie de cada página)
+         ============================================================ -->
+    <div id="footer_content">
+        SIVOTES · Sistema de Votación Escolar · Reporte de padrón generado
+        el {{ fecha_generado|date:"d/m/Y H:i" }} · Documento interno
+    </div>
+
+</body>
+</html>

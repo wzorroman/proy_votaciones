@@ -1,0 +1,257 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voto registrado · SIVOTES</title>
+  <style>
+    :root {
+      --bg-1: #eafaf1;
+      --bg-2: #f5fbf7;
+      --panel: #ffffff;
+      --success: #198754;
+      --success-dark: #146c43;
+      --muted: #5b6473;
+      --shadow: rgba(15, 23, 42, .18);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      font-family: Arial, system-ui, -apple-system, sans-serif;
+      color: #111827;
+      padding: 1.5rem;
+    }
+
+    .card {
+      width: min(92vw, 640px);
+      background: var(--panel);
+      border-radius: 28px;
+      box-shadow: 0 30px 60px var(--shadow);
+      padding: clamp(2rem, 4vw, 3rem);
+      text-align: center;
+      animation: rise .35s ease-out;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- Ícono check ---------- */
+    .check-wrap {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #34d399, var(--success));
+      display: grid;
+      place-items: center;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 12px 30px rgba(25, 135, 84, .35);
+      animation: pop .45s cubic-bezier(.18,.89,.32,1.28);
+    }
+    @keyframes pop {
+      0%   { transform: scale(.4); opacity: 0; }
+      60%  { transform: scale(1.08); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    .check-wrap svg {
+      width: 64px;
+      height: 64px;
+      stroke: white;
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      stroke-dasharray: 60;
+      stroke-dashoffset: 60;
+      animation: draw .5s .25s ease-out forwards;
+    }
+    @keyframes draw {
+      to { stroke-dashoffset: 0; }
+    }
+
+    h1 {
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      margin: 0 0 .65rem;
+      color: var(--success-dark);
+      letter-spacing: .01em;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: clamp(1rem, 1.4vw, 1.15rem);
+      line-height: 1.5;
+      margin: 0 0 1.75rem;
+    }
+    .subtitle strong { color: #0f172a; }
+
+    /* ---------- Countdown ---------- */
+    .countdown {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      background: #ecfdf5;
+      color: var(--success-dark);
+      border: 1px solid #a7f3d0;
+      border-radius: 999px;
+      padding: .55rem 1.1rem;
+      font-weight: 700;
+      font-size: .98rem;
+      margin-bottom: 1.75rem;
+    }
+    .countdown .ring {
+      --p: 100;
+      position: relative;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background:
+        conic-gradient(var(--success) calc(var(--p) * 1%),
+                       #d1fae5 0);
+      display: grid;
+      place-items: center;
+    }
+    .countdown .ring::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border-radius: 50%;
+      background: #ecfdf5;
+    }
+    .countdown .num {
+      position: relative;
+      z-index: 1;
+      font-size: .8rem;
+      color: var(--success-dark);
+    }
+
+    /* ---------- Botón ---------- */
+    .btn {
+      display: inline-block;
+      border: 0;
+      background: var(--success);
+      color: white;
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 1.1rem 2rem;
+      border-radius: 16px;
+      cursor: pointer;
+      width: 100%;
+      max-width: 420px;
+      transition: background .15s ease, transform .1s ease;
+      text-decoration: none;
+    }
+    .btn:hover { background: var(--success-dark); }
+    .btn:active { transform: scale(.985); }
+    .btn:focus-visible {
+      outline: 3px solid #86efac;
+      outline-offset: 3px;
+    }
+
+    .footnote {
+      color: var(--muted);
+      font-size: .85rem;
+      margin: 1.5rem 0 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="status" aria-live="polite">
+
+    <div class="check-wrap" aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        <polyline points="4,12.5 10,18.5 20,6.5" />
+      </svg>
+    </div>
+
+    <h1>¡Voto registrado exitosamente!</h1>
+    <p class="subtitle">
+      Su sufragio se ha emitido de forma
+      <strong>anónima y segura</strong>.<br>
+      Gracias por participar en la jornada electoral.
+    </p>
+
+    <div class="countdown" aria-hidden="true">
+      <div class="ring" id="ring"><span class="num" id="count">5</span></div>
+      <span>Redirigiendo a la pantalla de inicio…</span>
+    </div>
+
+    <a href="{% url 'kiosk_espera' %}" class="btn" id="btn-volver">
+      Regresar ahora
+    </a>
+
+    <p class="footnote">
+      Esta pantalla se cerrará automáticamente para el siguiente elector.
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var TOTAL = 5;
+      var REDIRECT_URL = "{% url 'kiosk_espera' %}";
+
+      var countEl = document.getElementById("count");
+      var ringEl  = document.getElementById("ring");
+      var btn     = document.getElementById("btn-volver");
+
+      var remaining = TOTAL;
+
+      function paint() {
+        countEl.textContent = remaining;
+        // El anillo avanza de 0% a 100% según el tiempo transcurrido
+        var pct = Math.round(((TOTAL - remaining) / TOTAL) * 100);
+        ringEl.style.setProperty("--p", pct);
+      }
+
+      function go() {
+        // location.replace evita que "atrás" regrese a esta pantalla
+        window.location.replace(REDIRECT_URL);
+      }
+
+      paint();
+
+      var timer = setInterval(function () {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(timer);
+          countEl.textContent = "0";
+          ringEl.style.setProperty("--p", 100);
+          go();
+          return;
+        }
+        paint();
+      }, 1000);
+
+      // Botón: adelanta la redirección (sin esperar al timer)
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        clearInterval(timer);
+        go();
+      });
+
+      // Si el usuario navega con teclado, Enter sobre el enlace también redirige
+      btn.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          clearInterval(timer);
+          go();
+        }
+      });
+
+      // Por si el navegador restaura desde bfcache: re-dispara la cuenta
+      window.addEventListener("pageshow", function (e) {
+        if (e.persisted) {
+          remaining = TOTAL;
+          paint();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Auditoría de Padrón · SIVOTES{% endblock %}
+
+{% block content %}
+
+<!-- Encabezado -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Auditoría de Padrón</h1>
+    <p class="text-secondary mb-0">
+      Proceso: <strong>{{ proceso.nombre }}</strong>
+    </p>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    {% include 'voting/includes/_estado_proceso.html' %}
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      ← Volver al Panel
+    </a>
+  </div>
+</div>
+
+<!-- Mensajes flash -->
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Filtros -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title text-secondary mb-3">Filtros de búsqueda</h5>
+    <form method="get" class="row g-3">
+
+      <!-- Fila 1 -->
+      <div class="col-12 col-md-6 col-lg-4">
+        <label class="form-label small text-secondary">Buscar DNI o Estudiante</label>
+        <input type="text" name="q" value="{{ filtros.q }}"
+               class="form-control" placeholder="Ej. 62950912 o Aguilar"
+               autocomplete="off" />
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label small text-secondary">Mesa</label>
+        <select name="mesa" class="form-select">
+          <option value="">Todas las mesas</option>
+          <option value="sin_mesa"
+            {% if filtros.mesa == "sin_mesa" %}selected{% endif %}>
+            — Sin mesa —
+          </option>
+          {% for m in mesas %}
+            <option value="{{ m.id }}"
+              {% if filtros.mesa == m.id|stringformat:"s" %}selected{% endif %}>
+              {{ m.numero_mesa }}{% if m.descripcion %} · {{ m.descripcion }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-2">
+        <label class="form-label small text-secondary">Nivel</label>
+        <select name="nivel" class="form-select" onchange="this.form.submit()">
+          <option value="">Todos</option>
+          {% for n in niveles %}
+            <option value="{{ n }}" {% if filtros.nivel == n %}selected{% endif %}>
+              {{ n|capfirst }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-6 col-lg-3">
+        <label class="form-label small text-secondary">Estado</label>
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          <option value="emitido"      {% if filtros.estado == 'emitido' %}selected{% endif %}>Emitido</option>
+          <option value="pendiente"    {% if filtros.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+          <option value="ausente"      {% if filtros.estado == 'ausente' %}selected{% endif %}>Ausente</option>
+          <option value="inhabilitado" {% if filtros.estado == 'inhabilitado' %}selected{% endif %}>Inhabilitado</option>
+          <option value="sin_mesa"     {% if filtros.estado == 'sin_mesa' %}selected{% endif %}>Sin mesa</option>
+        </select>
+      </div>
+
+      <!-- Fila 2 -->
+      <div class="col-12 col-md-4 col-lg-3">
+        <label class="form-label small text-secondary">Grado</label>
+        <select name="grado" class="form-select"
+                onchange="this.form.submit()"
+                {% if not filtros.nivel %}title="Seleccione primero un nivel"{% endif %}>
+          <option value="">Todos</option>
+          {% for g in grados %}
+            <option value="{{ g }}" {% if filtros.grado == g %}selected{% endif %}>
+              {{ g }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-4 col-lg-2">
+        <label class="form-label small text-secondary">Sección</label>
+        <select name="seccion" class="form-select">
+          <option value="">Todas</option>
+          {% for s in secciones %}
+            <option value="{{ s }}" {% if filtros.seccion == s %}selected{% endif %}>
+              {{ s }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-4 col-lg-7 d-flex align-items-end justify-content-end gap-2">
+        <a href="{% url 'auditoria_padron' %}" class="btn btn-outline-secondary">Limpiar</a>
+        <button type="submit" class="btn btn-primary">🔍 Filtrar</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Resultados -->
+<div class="card shadow-sm">
+  <div class="card-body">
+
+    <!-- Cabecera de resultados + Export -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+      <div class="text-secondary small">
+        Mostrando <strong>{{ page.object_list|length }}</strong>
+        de <strong>{{ total_filtrado }}</strong> registros —
+        Página <strong>{{ page.number }}</strong> de <strong>{{ page.paginator.num_pages }}</strong>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-dark"
+                data-bs-toggle="modal" data-bs-target="#modalReportes">
+          🖨️ Reportes
+        </button>
+        <a href="?{{ request.GET.urlencode }}&export=csv" class="btn btn-sm btn-outline-success">
+          📥 Exportar CSV
+        </a>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:60px;">#</th>
+            <th style="width:120px;">DNI</th>
+            <th>Estudiante</th>
+            <th style="width:110px;">Nivel</th>
+            <th style="width:90px;">Grado/Sec</th>
+            <th style="width:120px;">Mesa</th>
+            <th style="width:150px;">Estado</th>
+            <th style="width:130px;" class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for est in page.object_list %}
+          <tr>
+            <td class="text-secondary">{{ page.start_index|add:forloop.counter0 }}</td>
+            <td><strong>{{ est.numero_documento }}</strong></td>
+            <td>
+              {{ est.apellido_paterno }} {{ est.apellido_materno }},
+              <span class="text-secondary">{{ est.nombres }}</span>
+            </td>
+            <td class="text-secondary">{{ est.grado_seccion.nivel|capfirst|default:"—" }}</td>
+            <td>
+              {% if est.grado_seccion %}
+                {{ est.grado_seccion.grado }} {{ est.grado_seccion.seccion }}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if est.mesa %}
+                {{ est.mesa.numero_mesa }}
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if est.inhabilitado %}
+                <span class="badge bg-secondary">INHABILITADO</span>
+              {% elif est.ha_votado and not est.fecha_ausentismo %}
+                <span class="badge bg-success">VOTO EMITIDO</span>
+              {% elif est.fecha_ausentismo %}
+                <span class="badge bg-danger">AUSENTE</span>
+              {% elif not est.mesa %}
+                <span class="badge bg-dark">SIN MESA</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">PENDIENTE</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              <div class="btn-group btn-group-sm" role="group">
+
+                {% if est.ha_votado and not est.inhabilitado %}
+                  <!-- Ver auditoría -->
+                  <button type="button"
+                          class="btn btn-outline-info"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalVer"
+                          data-nombre="{{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombres }}"
+                          data-dni="{{ est.numero_documento }}"
+                          data-nivel="{{ est.grado_seccion.nivel|capfirst|default:'—' }}"
+                          data-grado="{% if est.grado_seccion %}{{ est.grado_seccion.grado }} {{ est.grado_seccion.seccion }}{% else %}—{% endif %}"
+                          data-mesa="{{ est.mesa.numero_mesa|default:'—' }}"
+                          data-fecha="{{ est.participacion.creado_en|date:'d/m/Y H:i:s' }}"
+                          data-hash="{{ est.participacion.hash_integridad|default:'' }}"
+                          title="Ver auditoría">🔍</button>
+
+                  <!-- Reiniciar voto -->
+                  <button type="button"
+                          class="btn btn-outline-warning"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalReiniciar"
+                          data-nombre="{{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombres }}"
+                          data-dni="{{ est.numero_documento }}"
+                          data-action-url="{% url 'reiniciar_voto' est.id %}?{{ request.GET.urlencode }}"
+                          title="Reiniciar voto">🔄</button>
+                {% endif %}
+
+                {% if not est.ha_votado and not est.inhabilitado and not est.fecha_ausentismo %}
+                  <!-- Inhabilitar -->
+                  <button type="button"
+                          class="btn btn-outline-danger"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalInhabilitar"
+                          data-nombre="{{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombres }}"
+                          data-dni="{{ est.numero_documento }}"
+                          data-action-url="{% url 'toggle_estudiante' est.id %}?{{ request.GET.urlencode }}"
+                          title="Inhabilitar estudiante">🚫</button>
+                {% endif %}
+
+                {% if est.inhabilitado %}
+                  <!-- Habilitar -->
+                  <button type="button"
+                          class="btn btn-outline-success"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalHabilitar"
+                          data-nombre="{{ est.apellido_paterno }} {{ est.apellido_materno }}, {{ est.nombres }}"
+                          data-dni="{{ est.numero_documento }}"
+                          data-action-url="{% url 'toggle_estudiante' est.id %}?{{ request.GET.urlencode }}"
+                          title="Habilitar estudiante">✅</button>
+                {% endif %}
+
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-secondary py-5">
+              No se encontraron estudiantes con los filtros aplicados.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if page.paginator.num_pages > 1 %}
+    <nav class="mt-4">
+      <ul class="pagination justify-content-center mb-0">
+        {% if page.has_previous %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page=1{% if querystring_sin_page %}&{{ querystring_sin_page }}{% endif %}">« Primera</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page.previous_page_number }}{% if querystring_sin_page %}&{{ querystring_sin_page }}{% endif %}">‹ Anterior</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">« Primera</span></li>
+          <li class="page-item disabled"><span class="page-link">‹ Anterior</span></li>
+        {% endif %}
+
+        <li class="page-item disabled">
+          <span class="page-link">Página {{ page.number }} de {{ page.paginator.num_pages }}</span>
+        </li>
+
+        {% if page.has_next %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page.next_page_number }}{% if querystring_sin_page %}&{{ querystring_sin_page }}{% endif %}">Siguiente ›</a>
+          </li>
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ page.paginator.num_pages }}{% if querystring_sin_page %}&{{ querystring_sin_page }}{% endif %}">Última »</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">Siguiente ›</span></li>
+          <li class="page-item disabled"><span class="page-link">Última »</span></li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- ============ MODALES ============ -->
+
+<!-- Modal: Ver -->
+<div class="modal fade" id="modalVer" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">🔍 Auditoría de Participación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <p class="mb-1"><strong>Estudiante:</strong> <span data-field="nombre">—</span></p>
+            <p class="mb-1"><strong>DNI:</strong> <span data-field="dni">—</span></p>
+          </div>
+          <div class="col-md-6">
+            <p class="mb-1"><strong>Nivel:</strong> <span data-field="nivel">—</span></p>
+            <p class="mb-1"><strong>Grado / Sección:</strong> <span data-field="grado">—</span></p>
+            <p class="mb-1"><strong>Mesa:</strong> <span data-field="mesa">—</span></p>
+          </div>
+        </div>
+        <hr />
+        <div class="p-3 bg-light rounded">
+          <p class="mb-1 text-success"><strong>Estado:</strong> Voto Emitido Exitosamente</p>
+          <p class="mb-1"><strong>Fecha y hora:</strong> <span data-field="fecha">—</span></p>
+          <p class="mb-0 font-monospace small text-muted">
+            <strong>Hash:</strong> <span data-field="hash">—</span>
+          </p>
+        </div>
+        <div class="alert alert-warning mt-3 small mb-0">
+          🔒 <strong>Nota de privacidad:</strong> el sistema certifica que el DNI
+          participó, pero no existe vinculación técnica entre el estudiante y las
+          listas que seleccionó.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Reiniciar voto -->
+<div class="modal fade" id="modalReiniciar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" class="modal-content">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.GET.urlencode }}" />
+      <div class="modal-header bg-warning-subtle">
+        <h5 class="modal-title">🔄 Reiniciar Voto</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p>Está a punto de reiniciar el voto de:</p>
+        <p class="mb-3"><strong data-field="nombre">—</strong> · DNI <span data-field="dni">—</span></p>
+        <p class="small text-secondary mb-3">
+          Se eliminarán los votos vinculados a su boleta y el DNI quedará nuevamente
+          en estado <em>Pendiente</em>. La acción queda registrada en la bitácora.
+        </p>
+        <label class="form-label small text-secondary">Motivo (opcional)</label>
+        <textarea name="motivo" class="form-control" rows="2"
+                  placeholder="Ej. Votó por error, falla técnica..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-warning">Sí, reiniciar voto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Inhabilitar -->
+<div class="modal fade" id="modalInhabilitar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" class="modal-content">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="inhabilitar" />
+      <input type="hidden" name="next" value="{{ request.GET.urlencode }}" />
+      <div class="modal-header bg-danger-subtle">
+        <h5 class="modal-title">🚫 Inhabilitar Estudiante</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p>Está a punto de inhabilitar a:</p>
+        <p class="mb-3"><strong data-field="nombre">—</strong> · DNI <span data-field="dni">—</span></p>
+        <p class="small text-secondary mb-3">
+          El estudiante <strong>no podrá</strong> ingresar su DNI en la tablet para
+          emitir su voto mientras permanezca en este estado.
+        </p>
+        <label class="form-label small text-secondary">Motivo (opcional)</label>
+        <textarea name="motivo" class="form-control" rows="2"
+                  placeholder="Ej. Retiro del colegio, incidencia de identidad..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-danger">Sí, inhabilitar alumno</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Habilitar -->
+<div class="modal fade" id="modalHabilitar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form method="post" class="modal-content">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="habilitar" />
+      <input type="hidden" name="next" value="{{ request.GET.urlencode }}" />
+      <div class="modal-header bg-success-subtle">
+        <h5 class="modal-title">✅ Habilitar Estudiante</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p>Está a punto de habilitar a:</p>
+        <p class="mb-3"><strong data-field="nombre">—</strong> · DNI <span data-field="dni">—</span></p>
+        <p class="small text-secondary mb-0">
+          El estudiante recuperará su estado <em>Pendiente</em> y podrá votar
+          normalmente en la tablet.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-success">Sí, habilitar alumno</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% include "voting/includes/reportes_modal.html" %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  "use strict";
+
+  // Al abrir un modal, inyecta los data-* del botón en el contenido del modal.
+  document.querySelectorAll(".modal").forEach(function (modalEl) {
+    modalEl.addEventListener("show.bs.modal", function (event) {
+      var trigger = event.relatedTarget;
+      if (!trigger) return;
+
+      // URL del POST (para reiniciar/inhabilitar/habilitar)
+      var actionUrl = trigger.getAttribute("data-action-url");
+      if (actionUrl) {
+        var form = modalEl.querySelector("form");
+        if (form) form.action = actionUrl;
+      }
+
+      // Campos dinámicos por nombre (data-<campo>)
+      modalEl.querySelectorAll("[data-field]").forEach(function (slot) {
+        var field = slot.getAttribute("data-field");
+        var value = trigger.getAttribute("data-" + field);
+        slot.textContent = (value === null || value === "") ? "—" : value;
+      });
+    });
+  });
+})();
+</script>
+{% endblock %}

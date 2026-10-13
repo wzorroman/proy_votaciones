@@ -1,0 +1,74 @@
+{% load l10n %}
+
+<div class="modal fade" id="modalGradosSeccion" tabindex="-1"
+     aria-labelledby="modalGradosSeccionLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalGradosSeccionLabel">🎓 Grados y Secciones por Mesa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        {% if proceso %}
+          <p class="text-secondary small mb-2">
+            Proceso: <strong>{{ proceso.nombre }}</strong>
+          </p>
+          {% if detalle_grado_seccion %}
+            <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
+              <table class="table table-sm table-hover align-middle mb-0">
+                <thead class="table-light sticky-top">
+                  <tr>
+                    <th>Mesa</th>
+                    <th>Grado</th>
+                    <th>Sección</th>
+                    <th class="text-end">Cant.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for mesa in detalle_grado_seccion %}
+                    {% comment %} Banda zebra por grupo de mesa {% endcomment %}
+                    <tr class="{% if forloop.counter0|divisibleby:2 %}table-light{% endif %}">
+                      <td colspan="4" class="py-1">
+                        <strong>{{ mesa.numero_mesa }}</strong>
+                        {% if mesa.descripcion %}
+                          <span class="text-secondary small">· {{ mesa.descripcion }}</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% for fila in mesa.filas %}
+                      <tr class="{% if forloop.parentloop.counter0|divisibleby:2 %}table-light{% endif %}">
+                        <td></td>
+                        <td>{{ fila.grado }}</td>
+                        <td>{{ fila.seccion }}</td>
+                        <td class="text-end">{{ fila.cantidad }}</td>
+                      </tr>
+                    {% endfor %}
+                    <tr class="fw-semibold {% if forloop.counter0|divisibleby:2 %}table-light{% endif %}">
+                      <td colspan="3" class="text-end">Subtotal de hábiles:</td>
+                      <td class="text-end">{{ mesa.habiles }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr class="table-dark fw-bold">
+                    <td colspan="3">TOTAL PADRÓN HÁBIL</td>
+                    <td class="text-end">{{ detalle_total }}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-secondary mb-0">
+              Aún no se han asignado estudiantes a las mesas.
+            </p>
+          {% endif %}
+        {% else %}
+          <p class="text-secondary mb-0">No hay un proceso electoral activo.</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

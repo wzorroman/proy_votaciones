@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+
+{% block title %}Panel en vivo · SIVOTES{% endblock %}
+
+{% block content %}
+
+{% if not activo %}
+  <div class="alert alert-warning d-flex align-items-center" role="alert">
+    <strong class="me-2">Sin proceso activo.</strong>
+    Activa un <em>Proceso Electoral</em> desde el
+    <a href="{% url 'admin:index' %}" class="alert-link">Django Admin</a>
+    para ver métricas en vivo.
+  </div>
+{% else %}
+
+<!-- Mensajes flash (iniciar / pausar / reanudar) -->
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- ============================================================
+     BANNER: sin votantes asignados a mesas (auto-pausa)
+     ============================================================ -->
+{% if sin_votantes_asignados %}
+<div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+  <strong class="me-2">⚠️ Aún no se han asignado estudiantes a las mesas.</strong>
+  El proceso se mantiene en pausa automáticamente hasta que se asigne al
+  menos 1 votante a una mesa desde
+  <a href="{% url 'mesas_lista' %}" class="alert-link ms-1">Mesas</a> &nbsp;o importando el padrón desde
+  <a href="{% url 'auditoria_padron' %}" class="alert-link ms-1">Auditar Padrón</a>.
+</div>
+{% endif %}
+
+<!-- ============================================================
+     HEADER: título + estado + botones de acción
+     ============================================================ -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h4 mb-0">Panel de Control</h1>
+    <p class="text-secondary mb-0 small">
+      Proceso: <strong>{{ proceso.nombre }}</strong>
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    {% include 'voting/includes/_estado_proceso.html' %}
+    <span id="last-update" class="text-secondary small">
+      Actualizado: —
+    </span>
+    <div class="vr d-none d-lg-inline"></div>
+
+    {% if proceso.votacion_iniciada and not proceso.votacion_pausada %}
+      <form method="post" action="{% url 'pausar_votacion' %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-warning" title="Bloquear temporalmente el kiosco">
+          ⏸️ Pausar
+        </button>
+      </form>
+    {% elif proceso.votacion_pausada %}
+      <form method="post" action="{% url 'reanudar_votacion' %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm btn-success" title="Volver a habilitar el kiosco">
+          ▶️ Reanudar
+        </button>
+      </form>
+    {% endif %}
+
+    <a href="{% url 'mesas_lista' %}" class="btn btn-sm btn-outline-primary">
+      🗳️ Ver Mesas
+    </a>
+    <button type="button" class="btn btn-sm btn-outline-dark"
+            data-bs-toggle="modal" data-bs-target="#modalReportes">
+      🖨️ Reportes
+    </button>
+    <a href="{% url 'auditoria_padron' %}" class="btn btn-sm btn-outline-secondary">
+      🔍 Auditar Padrón
+    </a>
+    <a href="{% url 'cerrar_proceso' %}" class="btn btn-sm btn-danger">
+      ⚠️ Cerrar Proceso
+    </a>
+  </div>
+</div>
+
+{% include "voting/includes/reportes_modal.html" %}
+{% include "voting/includes/grados_seccion_modal.html" %}
+
+<!-- ============================================================
+     BANNER: votación pausada
+     ============================================================ -->
+{% if proceso.votacion_pausada %}
+<div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+  <strong class="me-2">⏸️ Votación pausada.</strong>
+  El kiosco está bloqueado temporalmente. Pulse «Reanudar» para volver a habilitarlo.
+</div>
+{% endif %}
+
+<!-- ============================================================
+     INICIO DE VOTACIÓN: validación de asignación de mesas
+     ============================================================ -->
+{% if not proceso.votacion_iniciada %}
+<div class="card shadow-sm mb-3 border-{% if asignacion_mesas.sin_mesa %}warning{% else %}success{% endif %}">
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h6 class="mb-1">
+        <strong>Preparación del proceso — Estado del padrón:</strong>
+        {{ asignacion_mesas.asignados }} / {{ asignacion_mesas.total }} estudiantes con mesa asignada
+        ({{ asignacion_mesas.porcentaje|unlocalize }}%)
+      </h6>
+      {% if asignacion_mesas.sin_mesa %}
+        <p class="text-danger small mb-0">
+          ⚠️ Faltan {{ asignacion_mesas.sin_mesa }} estudiante(s) por asignar a una mesa.
+          Corrígelo antes de iniciar la votación.
+        </p>
+      {% else %}
+        <p class="text-success small mb-0">
+          ✅ Todo el padrón tiene mesa asignada. Puede iniciar el proceso.
+        </p>
+      {% endif %}
+    </div>
+    <div>
+      {% if asignacion_mesas.sin_mesa %}
+        <a href="{% url 'auditoria_padron' %}?estado=sin_mesa"
+           class="btn btn-outline-warning">
+          Ver sin mesa
+        </a>
+        <button type="button" class="btn btn-success" disabled>
+          ▶️ Iniciar Proceso
+        </button>
+      {% else %}
+        <form method="post" action="{% url 'iniciar_votacion' %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success">
+            ▶️ Iniciar Proceso
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ============================================================
+     KPIs compactos + barra de progreso (una sola tarjeta)
+     ============================================================ -->
+<div class="card shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="row g-2 align-items-center">
+
+      <div class="col-6 col-lg-2">
+        <div class="kpi-mini kpi-mini-info">
+          <div class="kpi-mini-label">Hábiles</div>
+          <div class="kpi-mini-value" id="kpi-habiles">{{ general.habiles }}</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-2">
+        <div class="kpi-mini kpi-mini-success">
+          <div class="kpi-mini-label">Emitidos</div>
+          <div class="kpi-mini-value text-success" id="kpi-emitidos">{{ general.emitidos }}</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-2">
+        <div class="kpi-mini kpi-mini-warning">
+          <div class="kpi-mini-label">Faltantes</div>
+          <div class="kpi-mini-value text-warning" id="kpi-faltantes">{{ general.faltantes }}</div>
+        </div>
+      </div>
+
+      <div class="col-6 col-lg-2">
+        <div class="kpi-mini kpi-mini-primary">
+          <div class="kpi-mini-label">Participación</div>
+          <div class="kpi-mini-value text-primary" id="kpi-porcentaje">
+            {{ general.porcentaje|unlocalize }}%
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de progreso inline -->
+      <div class="col-12 col-lg-4">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <small class="text-secondary" id="progress-text">
+            {{ general.emitidos }} / {{ general.habiles }} electores
+          </small>
+          <strong class="text-primary" id="progress-pct">
+            {{ general.porcentaje|unlocalize }}%
+          </strong>
+        </div>
+        <div class="progress" role="progressbar"
+             aria-label="Progreso de participación"
+             aria-valuemin="0" aria-valuemax="100"
+             aria-valuenow="{{ general.porcentaje|unlocalize }}">
+          <div id="progress-bar"
+               class="progress-bar bg-success"
+               style="width: {{ general.porcentaje|unlocalize }}%;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Gráficos (2 columnas) + Tabla de mesas (3ª columna)
+     ============================================================ -->
+<div class="row g-3">
+
+  <!-- Gráfico de barras por mesa -->
+  <div class="col-12 col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title text-secondary mb-2">Participación por Mesa (%)</h6>
+        <p class="text-secondary small mb-2">Barra al 100% por mesa · azul = emitidos, gris = falta</p>
+        <div id="chartMesas"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico de anillo -->
+  <div class="col-12 col-lg-3">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title text-secondary mb-2">Composición</h6>
+        <div id="chartGlobal"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de mesas -->
+  <div class="col-12 col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title text-secondary mb-2 d-flex justify-content-between align-items-center">
+          Detalle por Mesa
+          <button type="button" class="btn btn-sm btn-primary btn-mas rounded-circle border-0"
+                  data-bs-toggle="modal" data-bs-target="#modalGradosSeccion"
+                  title="Ver grados y secciones por mesa" aria-label="Ver grados y secciones por mesa">
+            <span class="fs-6 lh-1" aria-hidden="true">+</span>
+          </button>
+        </h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-mesas align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Mesa</th>
+                <th class="text-end">Háb.</th>
+                <th class="text-end">Emi.</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody id="mesas-tbody">
+              {% for m in mesas %}
+                {% widthratio m.emitidos m.habiles 100 as pct %}
+                <tr>
+                  <td>
+                    <strong>{{ m.numero_mesa }}</strong>
+                    {% if m.descripcion %}
+                      <div class="text-secondary small">{{ m.descripcion }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">{{ m.habiles }}</td>
+                  <td class="text-end">{{ m.emitidos }}/{{ m.habiles }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="progress flex-grow-1" style="height:.65rem;">
+                        <div class="progress-bar {% if pct|add:0 >= 75 %}bg-success{% else %}bg-primary{% endif %}"
+                             style="width: {{ pct }}%;"></div>
+                      </div>
+                      <span class="badge rounded-pill {% if pct|add:0 >= 75 %}text-bg-success{% else %}text-bg-primary{% endif %}"
+                            style="min-width:2.9rem;font-size:.8rem;">
+                        {{ pct }}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="text-center text-secondary py-3 small">
+                    No hay mesas registradas.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     NUEVA FILA: participación por grado y por sección
+     ============================================================ -->
+<div class="row g-3 mt-0">
+
+  <!-- Gráfico por grado (barras al 100%: lleno + lo que falta) -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title text-secondary mb-1">Participación por Grado (%)</h6>
+        <p class="text-secondary small mb-2">Barra al 100% por grado · azul = emitidos, gris = falta</p>
+        <div id="chartGrados"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico por sección (barras al 100%: lleno + lo que falta) -->
+  <div class="col-12 col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h6 class="card-title text-secondary mb-1">Participación por Sección (%)</h6>
+        <p class="text-secondary small mb-2">Barra al 100% por sección · azul = emitidos, gris = falta</p>
+        <div id="chartSecciones"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if activo %}
+<script src="{% static 'vendor/echarts/echarts.min.js' %}"></script>
+<script>
+  window.SIVOTES_LIVE_URL = "{% url 'dashboard_live_json' %}";
+  window.SIVOTES_INITIAL = {
+    votacionIniciada: {{ proceso.votacion_iniciada|yesno:"true,false" }},
+    votacionPausada: {{ proceso.votacion_pausada|yesno:"true,false" }},
+    general: {
+      habiles:   {{ general.habiles }},
+      emitidos:  {{ general.emitidos }},
+      faltantes: {{ general.faltantes }},
+      porcentaje: {{ general.porcentaje|unlocalize }}
+    },
+    mesas: [
+      {% for m in mesas %}
+      { numero_mesa: "{{ m.numero_mesa|escapejs }}",
+        descripcion: "{{ m.descripcion|default:''|escapejs }}",
+        habiles: {{ m.habiles }},
+        emitidos: {{ m.emitidos }} }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    grados: [
+      {% for g in grados %}
+      { grado: "{{ g.grado|escapejs }}",
+        habiles: {{ g.habiles }},
+        emitidos: {{ g.emitidos }} }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ],
+    secciones: [
+      {% for s in secciones %}
+      { grado: "{{ s.grado|escapejs }}",
+        seccion: "{{ s.seccion|escapejs }}",
+        habiles: {{ s.habiles }},
+        emitidos: {{ s.emitidos }} }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ]
+  };
+</script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endif %}
+{% endblock %}

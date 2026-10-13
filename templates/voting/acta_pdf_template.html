@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Acta de Cierre Oficial</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm 1.8cm;
+            @frame footer_frame {
+                -pdf-frame-content: footer_content;
+                left: 1.8cm;
+                right: 1.8cm;
+                bottom: 1cm;
+                height: 1.5cm;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            color: #222;
+            line-height: 1.4;
+        }
+
+         /* ---------- Membrete (logo a la izquierda) ---------- */
+        .membrete {
+            width: 100%;
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
+        }
+        .membrete-logo {
+            width: 110px;  /* más ancho: 160px */
+            vertical-align: middle;
+            text-align: left;
+            padding-right: 14px;
+        }
+        .membrete-texto {
+            vertical-align: middle;
+            text-align: left;
+            padding-left: 4px;
+        }
+        .logo-escudo {
+            max-height: 90px;  /* más alto: 110px */
+            max-width: 100px;
+        }
+        .logo-placeholder {
+            display: inline-block;
+            background: #0d6efd;
+            color: #ffffff;
+            padding: 14px 10px;
+            font-weight: bold;
+            font-size: 10pt;
+            letter-spacing: .06em;
+            border-radius: 4px;
+        }
+        .membrete-texto .institucion {
+            font-size: 13pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 0 0 2px;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+        .membrete-texto .sistema {
+            font-size: 9pt;
+            color: #6c757d;
+            margin: 0 0 4px;
+            letter-spacing: .05em;
+        }
+        .membrete-texto .fecha-cierre {
+            font-size: 9pt;
+            color: #495057;
+            margin: 0;
+        }
+
+        /* ---------- Título y estado ---------- */
+        .titulo-bloque {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .titulo-bloque h1 {
+            margin: 0 0 4px;
+            color: #0d6efd;
+            font-size: 16pt;
+            letter-spacing: .03em;
+        }
+        .titulo-bloque h2 {
+            margin: 0 0 8px;
+            color: #333;
+            font-size: 12pt;
+            font-weight: normal;
+        }
+        .badge-cerrado {
+            display: inline-block;
+            background-color: #dc3545;
+            color: #ffffff;
+            padding: 4px 12px;
+            font-size: 9pt;
+            font-weight: bold;
+            letter-spacing: .08em;
+        }
+
+        /* ---------- Tablas ---------- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .stats-table td {
+            border: 1px solid #dee2e6;
+            padding: 7px 10px;
+            font-size: 10.5pt;
+        }
+        .stats-table td.label {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            width: 60%;
+        }
+        .stats-table td.value {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+        }
+        .text-success { color: #198754; }
+        .text-danger  { color: #dc3545; }
+        .text-muted   { color: #6c757d; }
+
+        /* ---------- Resultados por categoría ---------- */
+        .categoria-title {
+            font-size: 11.5pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin: 12px 0 6px;
+            padding-left: 6px;
+            border-left: 3px solid #198754;
+        }
+        .resultados-table th {
+            background-color: #0d6efd;
+            color: #ffffff;
+            padding: 7px 10px;
+            text-align: left;
+            font-size: 10pt;
+            letter-spacing: .03em;
+        }
+        .resultados-table td {
+            border: 1px solid #dee2e6;
+            padding: 6px 10px;
+            font-size: 10pt;
+        }
+        .resultados-table tr:nth-child(even) td {
+            background-color: #f8f9fa;
+        }
+        .resultados-table .cell-center { text-align: center; }
+        .resultados-table .cell-right  { text-align: right; }
+        .resultados-table .cell-ganador {
+            background-color: #d1e7dd !important;
+            font-weight: bold;
+            color: #0f5132;
+        }
+        .badge-ganador {
+            background-color: #198754;
+            color: #ffffff;
+            padding: 2px 8px;
+            font-size: 8.5pt;
+            font-weight: bold;
+            letter-spacing: .04em;
+        }
+
+        /* ---------- Observaciones ---------- */
+        .observaciones {
+            border: 1px solid #dee2e6;
+            background-color: #f8f9fa;
+            padding: 10px 12px;
+            font-size: 10pt;
+            color: #495057;
+            line-height: 1.5;
+        }
+
+        /* ---------- Firmas ---------- */
+        .firmas {
+            margin-top: 60px;
+            width: 100%;
+        }
+        .firmas td {
+            width: 50%;
+            text-align: center;
+            vertical-align: top;
+            padding: 0 20px;
+        }
+        .firmas .linea {
+            border-top: 1px solid #333;
+            margin: 0 10px 6px;
+            height: 1px;
+        }
+        .firmas .cargo {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #222;
+        }
+        .firmas .sub {
+            font-size: 8.5pt;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        /* ---------- Footer ---------- */
+        #footer_content {
+            text-align: center;
+            font-size: 8pt;
+            color: #999;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 4px;
+        }
+        #footer_content .page-num {
+            color: #666;
+        }
+
+        /* ---------- Utilidades ---------- */
+        .mt-2 { margin-top: 8px; }
+        .mb-2 { margin-bottom: 8px; }
+        .text-center { text-align: center; }
+        .small { font-size: 9pt; }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+        MEMBRETE INSTITUCIONAL
+        Logo a la izquierda (escudo), datos de la institución a la derecha
+        ============================================================ -->
+    <table class="membrete" cellpadding="0" cellspacing="0">
+        <tr>
+            <td class="membrete-logo">
+                {% if proceso.logo %}
+                    <img src="{{ proceso.logo.path }}"
+                         alt="Logo institucional"
+                         class="logo-escudo" />
+                {% else %}
+                    <div class="logo-placeholder">SIVOTES</div>
+                {% endif %}
+            </td>
+            <td class="membrete-texto">
+                {% if proceso.nombre_institucion %}
+                    <div class="institucion">{{ proceso.nombre_institucion }}</div>
+                {% endif %}
+                <div class="sistema">SIVOTES · Sistema de Votación Escolar</div>
+                <div class="fecha-cierre">
+                    Cierre oficial:
+                    <strong>{{ acta.fecha_cierre_oficial|date:"d/m/Y H:i:s" }}</strong>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- ============================================================
+         TÍTULO Y ESTADO (ancho completo)
+         ============================================================ -->
+    <div class="titulo-bloque">
+        <h1>ACTA DE CIERRE Y RESULTADOS OFICIALES</h1>
+        <h2>{{ proceso.nombre }}</h2>
+        <div class="badge-cerrado">PROCESO CERRADO OFICIALMENTE</div>
+    </div>
+
+    <!-- ============================================================
+         1. RESUMEN ESTADÍSTICO GLOBAL
+         ============================================================ -->
+    <div class="section-title">1. Resumen Estadístico Global del Padrón</div>
+
+    <table class="stats-table">
+        <tr>
+            <td class="label">Total de Electores Hábiles</td>
+            <td class="value">{{ acta.total_electores_habiles }}</td>
+        </tr>
+        <tr>
+            <td class="label">Total de Votos Emitidos (Urnas)</td>
+            <td class="value text-success">{{ acta.total_votos_emitidos }}</td>
+        </tr>
+        <tr>
+            <td class="label">Total de Alumnos Ausentes</td>
+            <td class="value text-danger">{{ acta.total_ausentes }}</td>
+        </tr>
+        <tr>
+            <td class="label">Porcentaje de Participación</td>
+            <td class="value">
+                {% if acta.total_electores_habiles %}
+                    {{ acta.total_votos_emitidos|floatformat:0 }}
+                    /
+                    {{ acta.total_electores_habiles }}
+                    &nbsp;·&nbsp;
+                    <span class="text-success">
+                        {% widthratio acta.total_votos_emitidos acta.total_electores_habiles 100 %}%
+                    </span>
+                {% else %}
+                    0%
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <!-- ============================================================
+         2. RESULTADOS OFICIALES POR CATEGORÍA
+         ============================================================ -->
+    <div class="section-title">2. Resultados Oficiales y Ganadores por Tipo de Elección</div>
+
+    {% if acta.resultados_consolidados %}
+        {% for categoria, filas in acta.resultados_consolidados.items %}
+            <div class="categoria-title">
+                CATEGORÍA: {{ categoria|upper|cut:"_" }}
+            </div>
+
+            <table class="resultados-table">
+                <thead>
+                    <tr>
+                        <th style="width:45%;">LISTA / CANDIDATO</th>
+                        <th style="width:15%;" class="cell-center">TOTAL VOTOS</th>
+                        <th style="width:15%;" class="cell-center">PORCENTAJE</th>
+                        <th style="width:25%;" class="cell-center">ESTADO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in filas %}
+                        <tr>
+                            <td>{{ fila.lista }}</td>
+                            <td class="cell-center">{{ fila.votos }}</td>
+                            <td class="cell-center">{{ fila.porcentaje }}%</td>
+                            <td class="cell-center {% if fila.ganador %}cell-ganador{% endif %}">
+                                {% if fila.ganador %}
+                                    <span class="badge-ganador">🏆 GANADOR</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endfor %}
+    {% else %}
+        <p class="text-muted text-center small">
+            No hay resultados registrados para este proceso.
+        </p>
+    {% endif %}
+
+    <!-- ============================================================
+         3. OBSERVACIONES E INCIDENCIAS
+         ============================================================ -->
+    <div class="section-title">3. Observaciones e Incidencias</div>
+
+    <div class="observaciones">
+        {% if acta.observaciones %}
+            {{ acta.observaciones }}
+        {% else %}
+            El proceso electoral se desarrolló con total normalidad en las mesas
+            de votación habilitadas. No se reportaron impugnaciones ni
+            alteraciones de orden técnico durante la jornada.
+        {% endif %}
+    </div>
+
+    <!-- ============================================================
+         4. FIRMAS Y SELLOS
+         ============================================================ -->
+    <table class="firmas">
+        <tr><td>&nbsp;</td></tr>
+        <tr>
+            <td>
+                <div class="linea"></div>
+                <div class="cargo">Comité Electoral Escolar</div>
+                <div class="sub">Firma y Sello</div>
+            </td>
+            <td>
+                <div class="linea"></div>
+                <div class="cargo">Superadministrador del Sistema</div>
+                <div class="sub">Validación de Integridad · SIVOTES</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- ============================================================
+         FOOTER (fijo al pie de cada página)
+         ============================================================ -->
+    <div id="footer_content">
+        SIVOTES · Sistema de Votación Escolar · Documento oficial generado en
+        entorno local · @2026 Derechos Reservados <!--Página <span class="page-num">#</span> de <span class="page-num">##</span> -->
+    </div>
+
+</body>
+</html>

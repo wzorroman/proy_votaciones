@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+
+{% block title %}Panel en vivo · SIVOTES{% endblock %}
+
+{% block content %}
+
+{% if not activo %}
+  <div class="alert alert-warning d-flex align-items-center" role="alert">
+    <strong class="me-2">Sin proceso activo.</strong>
+    Activa un <em>Proceso Electoral</em> desde el <a href="{% url 'admin:index' %}" class="alert-link">Django Admin</a> para ver métricas en vivo.
+  </div>
+{% else %}
+
+<!-- Encabezado -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+  <div>
+    <h1 class="h3 mb-1">Panel de Control</h1>
+    <p class="text-secondary mb-0">
+      Proceso: <strong>{{ proceso.nombre }}</strong>
+    </p>
+  </div>
+  <div class="text-end">
+    <span class="badge bg-success fs-6 px-3 py-2">
+      <span class="status-dot bg-white"></span>EN CURSO
+    </span>
+    <div id="last-update" class="mt-1">Actualizado: —</div>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card kpi-info h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Electores Hábiles</div>
+        <div class="kpi-value" id="kpi-habiles">{{ general.habiles }}</div>
+        <div class="small text-secondary">Padrón vigente</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card kpi-success h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Votos Emitidos</div>
+        <div class="kpi-value text-success" id="kpi-emitidos">{{ general.emitidos }}</div>
+        <div class="small text-secondary">Registrados en urnas</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card kpi-warning h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Faltantes por Votar</div>
+        <div class="kpi-value text-warning" id="kpi-faltantes">{{ general.faltantes }}</div>
+        <div class="small text-secondary">Pendientes en padrón</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card kpi-card h-100 shadow-sm">
+      <div class="card-body">
+        <div class="kpi-label">Participación Global</div>
+        <div class="kpi-value text-primary" id="kpi-porcentaje">{{ general.porcentaje|unlocalize }}%</div>
+        <div class="small text-secondary">Sobre hábiles</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Barra de progreso global -->
+<!-- Avance del sufragio -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-end mb-2">
+      <div>
+        <h5 class="card-title mb-0">Avance del Sufragio</h5>
+        <small class="text-secondary" id="progress-text">
+          {{ general.emitidos }} / {{ general.habiles }} electores
+        </small>
+      </div>
+      <div class="text-end">
+        <span class="text-primary fw-bold"
+              id="progress-pct"
+              style="font-size:1.75rem;line-height:1;">
+          {{ general.porcentaje|unlocalize }}%
+        </span>
+      </div>
+    </div>
+    <div class="progress" role="progressbar"
+         aria-label="Progreso de participación"
+         aria-valuemin="0" aria-valuemax="100"
+         aria-valuenow="{{ general.porcentaje|unlocalize }}">
+      <div id="progress-bar"
+           class="progress-bar bg-success"
+           style="width: {{ general.porcentaje|unlocalize }}%;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráficos + tabla -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm chart-card h-100">
+      <div class="card-body">
+        <h5 class="card-title text-secondary mb-3">Participación por Mesa (%)</h5>
+        <div id="chartMesas"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card shadow-sm chart-card h-100">
+      <div class="card-body">
+        <h5 class="card-title text-secondary mb-3">Composición del Sufragio</h5>
+        <div id="chartGlobal"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="card-title text-secondary mb-3">Detalle por Mesa</h5>
+    <div class="table-responsive">
+      <table class="table table-hover table-mesas align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Mesa</th>
+            <th>Descripción</th>
+            <th class="text-end">Hábiles</th>
+            <th class="text-end">Emitidos</th>
+            <th style="width: 180px;">% Participación</th>
+          </tr>
+        </thead>
+        <tbody id="mesas-tbody">
+          {% for m in mesas %}
+            {% widthratio m.emitidos m.habiles 100 as pct %}
+            <tr>
+              <td><strong>{{ m.numero_mesa }}</strong></td>
+              <td class="text-secondary">{{ m.descripcion|default:"—" }}</td>
+              <td class="text-end">{{ m.habiles }}</td>
+              <td class="text-end">{{ m.emitidos }}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="progress flex-grow-1" style="height:.6rem;">
+                    <div class="progress-bar bg-primary" style="width: {{ pct }}%;"></div>
+                  </div>
+                  <small class="text-secondary" style="min-width:2.5rem;text-align:right;">
+                    {{ pct }}%
+                  </small>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-secondary py-4">
+                No hay mesas registradas para este proceso.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Acciones -->
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'mesas_lista' %}"
+       class="btn btn-outline-primary">
+      🗳️ Ver Mesas de Votación
+    </a>
+    <a href="{% url 'auditoria_padron' %}"
+       class="btn btn-outline-secondary">
+      🔍 Auditar Padrón
+    </a>
+  </div>
+  <a href="{% url 'cerrar_proceso' %}" class="btn btn-danger">
+    ⚠️ Cerrar Proceso Electoral
+  </a>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if activo %}
+<script src="{% static 'vendor/echarts/echarts.min.js' %}"></script>
+<script>
+  window.SIVOTES_LIVE_URL = "{% url 'dashboard_live_json' %}";
+  window.SIVOTES_INITIAL = {
+    general: {
+      habiles:   {{ general.habiles }},
+      emitidos:  {{ general.emitidos }},
+      faltantes: {{ general.faltantes }},
+      porcentaje: {{ general.porcentaje|unlocalize }} 
+    },
+    mesas: [
+      {% for m in mesas %}
+      { numero_mesa: "{{ m.numero_mesa|escapejs }}",
+        descripcion: "{{ m.descripcion|default:''|escapejs }}",
+        habiles: {{ m.habiles }},
+        emitidos: {{ m.emitidos }} }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    ]
+  };
+</script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% comment %}
+  Estado del proceso electoral.
+
+  Muestra el badge "EN PAUSA" / "EN CURSO" / "NO INICIADA" según las
+  banderas del proceso. Pensado para el encabezado de los distintos
+  paneles (dashboard, mesas, auditoría, cerrar) de modo que el
+  estado se replique de manera consistente.
+
+  Variables esperadas en el contexto:
+    - proceso (ProcesoElectoral con campos votacion_pausada / votacion_iniciada)
+{% endcomment %}
+{% if proceso.votacion_pausada %}
+  <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+    <span class="status-dot bg-white"></span>EN PAUSA
+  </span>
+{% elif proceso.votacion_iniciada %}
+  <span class="badge bg-success fs-6 px-3 py-2">
+    <span class="status-dot bg-white"></span>EN CURSO
+  </span>
+{% else %}
+  <span class="badge bg-secondary fs-6 px-3 py-2">
+    <span class="status-dot bg-white"></span>NO INICIADA
+  </span>
+{% endif %}

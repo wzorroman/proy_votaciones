@@ -1,0 +1,324 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load l10n %}
+
+{% block title %}Cerrar Proceso Electoral · SIVOTES{% endblock %}
+
+{% block content %}
+
+{% if not proceso %}
+
+  <!-- ============================================================
+       Sin proceso activo
+       ============================================================ -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h1 class="h3 mb-1">Cerrar Proceso Electoral</h1>
+      <p class="text-secondary mb-0">No hay un proceso activo para cerrar.</p>
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+      ← Volver al Panel
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body text-center py-5">
+      <div style="font-size:3rem;line-height:1;margin-bottom:1rem;">✅</div>
+      <h4 class="mb-2">Todo en orden</h4>
+      <p class="text-secondary mb-4">
+        No hay ningún proceso electoral en curso. Cuando cierres un proceso,
+        aparecerá aquí disponible para descargar el acta.
+      </p>
+      <a href="{% url 'dashboard' %}" class="btn btn-primary">
+        Ir al Panel
+      </a>
+    </div>
+  </div>
+
+{% else %}
+
+  <!-- ============================================================
+       HEADER
+       ============================================================ -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <h1 class="h3 mb-1">Cerrar Proceso Electoral</h1>
+      <p class="text-secondary mb-0">
+        Proceso: <strong>{{ proceso.nombre }}</strong>
+      </p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      {% include 'voting/includes/_estado_proceso.html' %}
+      <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-secondary">
+        ← Volver al Panel
+      </a>
+    </div>
+  </div>
+
+  <!-- Mensajes flash -->
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- ============================================================
+       ADVERTENCIA PRINCIPAL
+       ============================================================ -->
+  <div class="alert alert-danger border-danger d-flex align-items-start gap-3 mb-4" role="alert">
+    <div style="font-size:2rem;line-height:1;">⚠️</div>
+    <div>
+      <h5 class="alert-heading mb-1">Esta acción es irreversible</h5>
+      <p class="mb-0 small">
+        Al cerrar el proceso se bloquearán todas las tablets de votación, se
+        registrará automáticamente el ausentismo de los alumnos que no votaron
+        y se calcularán los resultados oficiales. <strong>No se puede deshacer.</strong>
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ============================================================
+         COLUMNA IZQUIERDA: Resumen del proceso
+         ============================================================ -->
+    <div class="col-lg-7">
+
+      <!-- KPIs -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h5 class="card-title text-secondary mb-3">Resumen antes del cierre</h5>
+
+          <div class="row g-2">
+            <div class="col-6 col-md-3">
+              <div class="kpi-mini kpi-mini-info">
+                <div class="kpi-mini-label">Hábiles</div>
+                <div class="kpi-mini-value">{{ general.habiles }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="kpi-mini kpi-mini-success">
+                <div class="kpi-mini-label">Emitidos</div>
+                <div class="kpi-mini-value text-success">{{ general.emitidos }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="kpi-mini kpi-mini-warning">
+                <div class="kpi-mini-label">Serán ausentes</div>
+                <div class="kpi-mini-value text-warning">{{ general.faltantes }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="kpi-mini kpi-mini-primary">
+                <div class="kpi-mini-label">Participación</div>
+                <div class="kpi-mini-value text-primary">
+                  {{ general.porcentaje|unlocalize }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detalles del proceso -->
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <h5 class="card-title text-secondary mb-3">Detalles del proceso</h5>
+
+          <div class="row g-3 small">
+            <div class="col-6 col-md-4">
+              <div class="text-secondary text-uppercase" style="font-size:.7rem;letter-spacing:.05em;font-weight:700;">
+                Nombre
+              </div>
+              <div class="fw-bold">{{ proceso.nombre }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary text-uppercase" style="font-size:.7rem;letter-spacing:.05em;font-weight:700;">
+                Institución
+              </div>
+              <div class="fw-bold">{{ proceso.nombre_institucion|default:"—" }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary text-uppercase" style="font-size:.7rem;letter-spacing:.05em;font-weight:700;">
+                Inicio
+              </div>
+              <div class="fw-bold">
+                {{ proceso.fecha_inicio|date:"d/m/Y H:i"|default:"—" }}
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary text-uppercase" style="font-size:.7rem;letter-spacing:.05em;font-weight:700;">
+                Mesas de votación
+              </div>
+              <div class="fw-bold">{{ mesas|length }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary text-uppercase" style="font-size:.7rem;letter-spacing:.05em;font-weight:700;">
+                Tipos de elección
+              </div>
+              <div class="fw-bold">{{ total_tipos }}</div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="text-secondary text-uppercase" style="font-size:.7rem;letter-spacing:.05em;font-weight:700;">
+                Listas activas
+              </div>
+              <div class="fw-bold">{{ total_listas }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consecuencias -->
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title text-secondary mb-3">Al confirmar el cierre…</h5>
+          <ul class="mb-0 small ps-3">
+            <li class="mb-1">
+              Todas las tablets mostrarán <strong>“Proceso cerrado”</strong> y
+              rechazarán nuevos DNIs.
+            </li>
+            <li class="mb-1">
+              Los <strong>{{ general.faltantes }}</strong> alumnos que no votaron
+              quedarán marcados como <strong>ausentes</strong> con la fecha y hora
+              exactas del cierre.
+            </li>
+            <li class="mb-1">
+              Se calcularán los <strong>resultados oficiales</strong> por categoría
+              y se identificarán los ganadores.
+            </li>
+            <li class="mb-1">
+              Se generará el <strong>acta inmutable</strong> descargable en PDF con
+              el membrete institucional.
+            </li>
+            <li>
+              El proceso pasará a estado <strong>CERRADO</strong>. Solo se podrá
+              reiniciar desde el admin si necesitas reabrir la votación.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============================================================
+         COLUMNA DERECHA: Formulario de confirmación
+         ============================================================ -->
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-danger h-100">
+        <div class="card-header bg-danger text-white">
+          <strong>⚠️ Confirmación de cierre</strong>
+        </div>
+        <div class="card-body">
+          <p class="small text-secondary mb-3">
+            Para confirmar el cierre escriba la palabra
+            <code class="text-danger fw-bold">CERRAR</code> en el campo de abajo.
+          </p>
+
+          <form method="post" id="cierre-form" autocomplete="off">
+            {% csrf_token %}
+
+            <div class="mb-4">
+              <label for="confirmacion" class="form-label small fw-bold">
+                Escriba <code class="text-danger">CERRAR</code> para confirmar:
+              </label>
+              <input type="text"
+                     id="confirmacion"
+                     name="confirmacion"
+                     class="form-control form-control-lg text-uppercase"
+                     placeholder="CERRAR"
+                     required
+                     autocomplete="off"
+                     spellcheck="false"
+                     style="font-family: 'Courier New', monospace;
+                            letter-spacing: .25em;
+                            text-align: center;
+                            font-weight: 700;" />
+              <div class="form-text small">
+                Esta acción no se puede deshacer.
+              </div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit"
+                      id="btn-cerrar"
+                      class="btn btn-danger btn-lg"
+                      disabled>
+                ⚠️ Sí, cerrar proceso electoral
+              </button>
+              <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                Cancelar y volver al Panel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if proceso %}
+<script>
+(function () {
+  "use strict";
+
+  var input   = document.getElementById("confirmacion");
+  var btn     = document.getElementById("btn-cerrar");
+  var form    = document.getElementById("cierre-form");
+
+  function evaluar() {
+    var v = (input.value || "").trim().toUpperCase();
+    btn.disabled = (v !== "CERRAR");
+    if (v === "CERRAR") {
+      btn.classList.add("pulse");
+    } else {
+      btn.classList.remove("pulse");
+    }
+  }
+
+  input.addEventListener("input", evaluar);
+
+  // Doble seguro: exigir confirmación final antes de enviar
+  form.addEventListener("submit", function (e) {
+    var v = (input.value || "").trim().toUpperCase();
+    if (v !== "CERRAR") {
+      e.preventDefault();
+      input.focus();
+      return;
+    }
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(
+      "¿Confirma el cierre definitivo del proceso?\n\n" +
+      "Esta acción es IRREVERSIBLE."
+    )) {
+      e.preventDefault();
+      return;
+    }
+    // Deshabilitar el botón para evitar doble envío
+    btn.disabled = true;
+    btn.textContent = "Cerrando proceso…";
+  });
+
+  input.focus();
+  evaluar();
+})();
+</script>
+
+<style>
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(220, 53, 69, .45); }
+    70%  { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+  }
+  .btn-danger.pulse {
+    animation: pulse 1.6s infinite;
+  }
+</style>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a>
+  &rsaquo;
+  <a href="{% url 'admin:app_list' app_label=opts.app_label %}">
+    {{ opts.app_config.verbose_name }}
+  </a>
+  &rsaquo;
+  <a href="{% url opts|admin_urlname:'changelist' %}">
+    {{ opts.verbose_name_plural|capfirst }}
+  </a>
+  &rsaquo; Asignar a mesa
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Asignar grado/sección a una mesa</h1>
+
+<p style="margin: 1em 0;">
+  Se moverán <strong>todos los estudiantes</strong> del grado/sección
+  seleccionado a la mesa elegida. El proceso se toma de la mesa destino.
+</p>
+
+{% if hay_votos %}
+<div style="background:#fde7e7;border-left:4px solid #dc2626;
+            padding:1rem 1.25rem;margin:1.25rem 0;border-radius:.4rem;">
+  <p style="margin:0;color:#7f1d1d;">
+    ⚠️ Algunos grados/secciones seleccionados tienen estudiantes que
+    <strong>ya emitieron su voto</strong>. La operación será rechazada si el
+    proceso de la mesa elegida tiene votos en ese grado/sección:
+    deberá <strong>reiniciar la votación</strong> de ese proceso antes de moverlos.
+  </p>
+</div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.ids }}
+
+  {% if form.non_field_errors %}
+    <p class="errornote">{{ form.non_field_errors }}</p>
+  {% endif %}
+
+  <fieldset class="module aligned">
+    <div class="form-row">
+      <label for="{{ form.mesa_destino.id_for_label }}">
+        {{ form.mesa_destino.label }}:
+      </label>
+      {{ form.mesa_destino }}
+      {% if form.mesa_destino.errors %}
+        <ul class="errorlist">{{ form.mesa_destino.errors }}</ul>
+      {% endif %}
+    </div>
+  </fieldset>
+
+  <h2 style="margin-top: 1.5em;">
+    Grado/secciones seleccionados ({{ resumen|length }})
+  </h2>
+
+  <table style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr style="background: #f8f8f8;">
+        <th style="padding: 6px 10px; text-align: left;">Nivel</th>
+        <th style="padding: 6px 10px; text-align: left;">Grado / Sección</th>
+        <th style="padding: 6px 10px; text-align: right;">Estudiantes</th>
+        <th style="padding: 6px 10px; text-align: right;">Ya votaron</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in resumen %}
+        <tr style="border-top: 1px solid #eee;">
+          <td style="padding: 6px 10px;">{{ row.gs.nivel|capfirst|default:"—" }}</td>
+          <td style="padding: 6px 10px;"><strong>{{ row.gs.grado }} {{ row.gs.seccion }}</strong></td>
+          <td style="padding: 6px 10px; text-align: right;">{{ row.total }}</td>
+          <td style="padding: 6px 10px; text-align: right;">
+            {% if row.votaron %}
+              <span style="color:#b91c1c;font-weight:600;">{{ row.votaron }}</span>
+            {% else %}
+              <span class="text-secondary">0</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="help" style="margin-top:.75rem;color:#666;">
+    Nota: solo se reasignan los estudiantes del <strong>proceso de la mesa
+    seleccionada</strong>; los de otros procesos no se ven afectados.
+  </p>
+
+  <div class="submit-row" style="margin-top: 1.5em;">
+    <input type="submit" value="Asignar a la mesa seleccionada" class="default" />
+    <a href="{% url opts|admin_urlname:'changelist' %}"
+       class="button cancel-link"
+       style="margin-left: 1em;">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

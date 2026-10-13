@@ -1,0 +1,41 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}SIVOTES · Panel{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/admin.css' %}" />
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-body-tertiary">
+
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand fw-bold" href="{% url 'dashboard' %}">
+        {% if proceso.logo %}
+          <img src="{{ proceso.logo.url }}" alt="Logo"
+              style="height:32px; width:auto;" />
+        {% endif %}
+        SIVOTES <span class="fw-normal opacity-75">· Panel</span>
+      </a>
+      <div class="d-flex align-items-center gap-3 text-white">
+        <span class="small opacity-75 d-none d-md-inline">
+          {{ request.user.get_username|default:"Operador" }}
+        </span>
+        <a href="{% url 'admin:index' %}" class="btn btn-sm btn-outline-light">
+          Django Admin
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container-fluid px-4 py-4">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

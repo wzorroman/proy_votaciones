@@ -1,0 +1,254 @@
+/* ============================================================
+   SIVOTES · Panel admin (Bootstrap 5 complementario)
+   ============================================================ */
+
+/* ---------- KPIs (tarjetas grandes, para otras pantallas) ---------- */
+.kpi-card {
+  border: 0;
+  border-left: 5px solid var(--bs-primary);
+  border-radius: .75rem;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.08);
+}
+.kpi-card.kpi-success { border-left-color: var(--bs-success); }
+.kpi-card.kpi-warning { border-left-color: var(--bs-warning); }
+.kpi-card.kpi-info    { border-left-color: var(--bs-info); }
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin: .25rem 0;
+}
+.kpi-label {
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-size: .75rem;
+  color: var(--bs-secondary-color);
+}
+
+/* ---------- KPIs compactos (dashboard) ---------- */
+.kpi-mini {
+  border-left: 4px solid var(--bs-primary);
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+  background: #f8fafc;
+}
+.kpi-mini-info    { border-left-color: var(--bs-info); }
+.kpi-mini-success { border-left-color: var(--bs-success); }
+.kpi-mini-warning { border-left-color: var(--bs-warning); }
+.kpi-mini-primary { border-left-color: var(--bs-primary); }
+
+.kpi-mini-label {
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-size: .65rem;
+  font-weight: 700;
+  color: var(--bs-secondary-color);
+}
+.kpi-mini-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-top: .1rem;
+}
+
+/* ---------- Gráficos ---------- */
+.chart-card { min-height: 240px; }
+
+#chartMesas, #chartGlobal {
+  width: 100%;
+  height: 220px !important;   /* antes 320px */
+  min-height: 220px !important;
+}
+
+/* Gráficos de la fila inferior (grado y sección, a ancho completo) */
+#chartGrados, #chartSecciones {
+  width: 100%;
+  height: 260px !important;
+  min-height: 260px !important;
+}
+
+/* ---------- Tabla de mesas (dashboard) ---------- */
+.table-mesas {
+  font-size: .8rem;
+}
+.table-mesas thead th {
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--bs-secondary-color);
+  font-weight: 700;
+  border-bottom-width: 1px;
+}
+.table-mesas tbody tr {
+  vertical-align: middle;
+}
+.table-mesas tbody td {
+  padding: .35rem .4rem;
+}
+
+/* Scroll interno cuando hay muchas mesas */
+.table-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* Botón (+) de "Detalle por Mesa" */
+.btn-mas {
+  width: 1.55rem;
+  height: 1.55rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+  box-shadow: 0 2px 6px rgba(13, 110, 253, .35);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.btn-mas:hover {
+  transform: scale(1.12);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, .5);
+}
+
+.btn-mas:active {
+  transform: scale(.95);
+}
+
+/* ---------- Elementos varios ---------- */
+.status-dot {
+  display: inline-block;
+  width: .6rem;
+  height: .6rem;
+  border-radius: 50%;
+  margin-right: .35rem;
+}
+
+#last-update {
+  font-size: .75rem;
+}
+
+#progress-pct {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  font-size: .95rem;
+}
+
+.progress {
+  height: 1rem;
+  border-radius: .8rem;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+.progress-bar {
+  font-weight: 600;
+  transition: width .35s ease;
+  border-radius: .8rem;
+}
+
+/* ---------- Mesas de votación (pantalla /kiosk/panel/mesas/) ---------- */
+.mesas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: .25rem;
+}
+.mesa-item {
+  display: block;
+  padding: .75rem 1rem;
+  border-radius: .65rem;
+  border: 1px solid #e5e7eb;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .15s ease, background .15s ease;
+}
+.mesa-item:hover {
+  border-color: #93c5fd;
+  background: #f8faff;
+}
+.mesa-item-active {
+  border-color: #0d6efd;
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, .12);
+}
+.mesa-item-head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .25rem;
+}
+.mesa-item-num {
+  color: #0d6efd;
+  font-weight: 700;
+  width: 1rem;
+}
+.mesa-item-title {
+  font-weight: 700;
+  flex-grow: 1;
+}
+.mesa-item-pct {
+  font-weight: 700;
+  color: #0d6efd;
+}
+.mesa-item-desc {
+  font-size: .85rem;
+  color: #6b7280;
+  margin-bottom: .5rem;
+  padding-left: 1.5rem;
+}
+.mesa-item-progress .progress {
+  height: .45rem;
+  border-radius: .5rem;
+}
+.mesa-item-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: .78rem;
+  margin-top: .35rem;
+  padding-left: 1.5rem;
+  color: #374151;
+}
+
+/* ---------- Mini KPIs del detalle de mesa ---------- */
+.mini-kpi {
+  background: #f8fafc;
+  border-left: 3px solid #0d6efd;
+  border-radius: .5rem;
+  padding: .6rem .75rem;
+}
+.mini-kpi-success { border-left-color: #198754; }
+.mini-kpi-warning { border-left-color: #ffc107; }
+.mini-kpi-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #6b7280;
+}
+.mini-kpi-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* ---------- Kiosco: fotos de listas ---------- */
+.card .photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  background: white;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 991px) {
+  .mesas-lista { max-height: none; }
+  .table-scroll { max-height: none; }
+}
+}

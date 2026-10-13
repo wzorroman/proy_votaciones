@@ -1,0 +1,101 @@
+{% load static %}
+
+<div class="modal fade" id="modalReportes" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">🖨️ Reportes de Padrón (PDF)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary small mb-3">
+          Seleccione el alcance del reporte. Se genera un PDF en A4 vertical
+          con membrete institucional.
+        </p>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input reporte-opcion" type="radio"
+                 name="rep_alcance" id="repTodos" value="todos" checked />
+          <label class="form-check-label" for="repTodos">
+            <strong>📄 Todo el padrón por mesas</strong>
+          </label>
+          <div class="text-secondary small ms-4">
+            Una hoja por mesa más la sección «Sin mesa» al final.
+          </div>
+        </div>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input reporte-opcion" type="radio"
+                 name="rep_alcance" id="repMesa" value="mesa"
+                 {% if not mesas %}disabled{% endif %} />
+          <label class="form-check-label" for="repMesa">
+            <strong>🗂️ Solo una mesa</strong>
+            {% if not mesas %}
+              <span class="text-secondary small">(sin mesas registradas)</span>
+            {% endif %}
+          </label>
+        </div>
+        <div class="ms-4 mb-2 d-none" id="rep-mesa-select">
+          <select class="form-select form-select-sm" id="repMesaId" name="rep_mesa">
+            {% for m in mesas %}
+              <option value="{{ m.id }}">{{ m.numero_mesa }}{% if m.descripcion %} · {{ m.descripcion }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-check mb-2">
+          <input class="form-check-input reporte-opcion" type="radio"
+                 name="rep_alcance" id="repSinMesa" value="sin_mesa" />
+          <label class="form-check-label" for="repSinMesa">
+            <strong>🚫 Sin mesa asignada</strong>
+          </label>
+          <div class="text-secondary small ms-4">
+            Lista solo los alumnos sin mesa asignada.
+          </div>
+        </div>
+
+        <hr />
+        <p class="small text-secondary mb-0">
+          Formato: A4 vertical · logo izquierda / institución a la derecha ·
+          orden por grado, sección y apellidos · estilo cebra · solo electores hábiles.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary btn-sm"
+                data-bs-dismiss="modal">Cancelar</button>
+        <a class="btn btn-primary btn-sm" id="repGenerar"
+           href="{% url 'padron_pdf' %}">📥 Generar PDF</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var base = "{% url 'padron_pdf' %}";
+  var modal = document.getElementById("modalReportes");
+  if (!modal) return;
+  var sel = document.getElementById("repMesaId");
+  var link = document.getElementById("repGenerar");
+  var wrap = document.getElementById("rep-mesa-select");
+  var radios = modal.querySelectorAll(".reporte-opcion");
+
+  function actualizar() {
+    var marcado = modal.querySelector(".reporte-opcion:checked");
+    var valor = marcado ? marcado.value : "todos";
+    if (wrap) wrap.classList.toggle("d-none", valor !== "mesa");
+    if (valor === "mesa" && sel) {
+      link.href = base + "?mesa=" + encodeURIComponent(sel.value);
+    } else if (valor === "sin_mesa") {
+      link.href = base + "?estado=sin_mesa";
+    } else {
+      link.href = base;
+    }
+  }
+
+  radios.forEach(function (r) { r.addEventListener("change", actualizar); });
+  if (sel) sel.addEventListener("change", actualizar);
+  modal.addEventListener("show.bs.modal", actualizar);
+})();
+</script>

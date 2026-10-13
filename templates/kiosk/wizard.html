@@ -1,0 +1,727 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Votación · {{ tipo.nombre }}</title>
+  <style>
+    :root {
+      --bg-type: {{ tipo.color_fondo|default:'#EAF3FF' }};
+      --panel: #ffffff;
+      --primary: #1d4ed8;
+      --primary-dark: #173ea8;
+      --muted: #5b6473;
+      --shadow: rgba(15, 23, 42, 0.18);
+      --danger: #d93025;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg-type);
+      font-family: Arial, system-ui, -apple-system, sans-serif;
+      color: #111827;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---------- Barra superior ---------- */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem clamp(1rem, 2vw, 2rem) .5rem;
+      background: rgba(255, 255, 255, .88);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
+    }
+    .topbar .step {
+      font-weight: 700;
+      font-size: clamp(.95rem, 1.4vw, 1.25rem);
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #1f2937;
+    }
+    .topbar .step .muted { color: var(--muted); font-weight: 500; }
+    .btn-exit {
+      border: 0;
+      background: #fee2e2;
+      color: #991b1b;
+      font-weight: 700;
+      padding: .65rem 1.1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: .95rem;
+    }
+    .btn-exit:hover { background: #fecaca; }
+
+    /* ---------- Barra de identificación del alumno ---------- */
+    .student-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 2rem;
+      align-items: center;
+      padding: .75rem clamp(1rem, 2vw, 2rem);
+      background: rgba(255, 255, 255, .88);
+      border-bottom: 1px solid rgba(15, 23, 42, .08);
+      font-size: clamp(.85rem, 1.05vw, 1rem);
+    }
+    .student-bar .student-field {
+      display: flex;
+      align-items: center;
+      gap: .35rem;
+      color: #1f2937;
+    }
+    .student-bar .student-field .lbl {
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: .75rem;
+      letter-spacing: .04em;
+    }
+    .student-bar .student-field .val {
+      font-weight: 800;
+    }
+    .student-bar .student-field.highlight .val {
+      color: var(--primary);
+      font-family: 'Courier New', monospace;
+      font-size: 1.05em;
+      letter-spacing: .08em;
+    }
+
+    /* ---------- Progreso ---------- */
+    .progress-steps {
+      display: flex;
+      gap: .4rem;
+      padding: 0 clamp(1rem, 2vw, 2rem) .85rem;
+      background: rgba(255, 255, 255, .88);
+    }
+    .progress-steps .dot {
+      flex: 1;
+      height: 6px;
+      background: #dbeafe;
+      border-radius: 4px;
+      transition: background .2s ease;
+    }
+    .progress-steps .dot.active { background: var(--primary); }
+
+    /* ---------- Main ---------- */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem clamp(1rem, 4vw, 4rem) 3rem;
+    }
+    .prompt {
+      text-align: center;
+      font-size: clamp(1.2rem, 2vw, 1.9rem);
+      font-weight: 700;
+      margin: 0 0 1.5rem;
+      color: #0f172a;
+      line-height: 1.35;
+    }
+    .prompt strong { color: var(--primary); }
+
+    .error-banner {
+      background: #fde7e7;
+      color: var(--danger);
+      border: 1px solid #f5b7b1;
+      border-radius: 12px;
+      padding: .9rem 1rem;
+      font-weight: 600;
+      text-align: center;
+      margin: 0 auto 1.25rem;
+      max-width: 720px;
+    }
+
+    /* ---------- Cards ---------- */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: clamp(1rem, 2vw, 2rem);
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .card {
+      background: var(--panel);
+      border-radius: 24px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, .12);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      border: 3px solid transparent;
+      min-height: 380px;
+      text-align: center;
+      user-select: none;
+    }
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-4px);
+      box-shadow: 0 28px 50px rgba(15, 23, 42, .18);
+      border-color: var(--primary);
+      outline: none;
+    }
+    .card .photo {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 320px;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      font-size: 3rem;
+      color: #93c5fd;
+      overflow: hidden;
+    }
+    .card .photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .card .list-name {
+      font-size: clamp(1.1rem, 1.4vw, 1.4rem);
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.2;
+    }
+    .card .desc {
+      font-size: .98rem;
+      color: var(--muted);
+      min-height: 2.4em;
+      line-height: 1.3;
+    }
+    .card .select {
+      margin-top: auto;
+      background: var(--primary);
+      color: white;
+      border: 0;
+      border-radius: 14px;
+      padding: .95rem 1.4rem;
+      font-size: 1.05rem;
+      font-weight: 800;
+      width: 100%;
+      cursor: pointer;
+      pointer-events: none;
+    }
+    .card:hover .select { background: var(--primary-dark); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      font-size: 1.2rem;
+      grid-column: 1 / -1;
+      padding: 3rem 1rem;
+    }
+
+    /* ---------- Overlay de confirmación ---------- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, .55);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 100;
+    }
+    .overlay.show { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 24px;
+      max-width: 680px;
+      width: 100%;
+      padding: 2rem;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, .35);
+      text-align: center;
+      animation: pop .18s ease-out;
+      max-height: 92vh;
+      overflow-y: auto;
+    }
+    @keyframes pop {
+      from { transform: scale(.96); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .modal h2 {
+      margin: 0 0 .35rem;
+      font-size: clamp(1.3rem, 2vw, 1.7rem);
+      color: #0f172a;
+    }
+    .modal .subtitle {
+      color: var(--muted);
+      margin: 0 0 .9rem;
+      font-size: 1rem;
+    }
+    .selected-label {
+      display: inline-block;
+      background: var(--bg-type);
+      color: #0f172a;
+      padding: .95rem 1.4rem;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 1.15rem;
+      margin: 0 0 1.1rem;
+      border: 1px solid rgba(15, 23, 42, .08);
+    }
+    .warning {
+      color: var(--muted);
+      font-size: .98rem;
+      line-height: 1.5;
+      margin: 0 0 1.5rem;
+    }
+
+    /* ---------- Bloque de confirmación de DNI (último paso) ---------- */
+    .confirm-block {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.25rem;
+      text-align: left;
+      margin: 0 0 1.25rem;
+    }
+    .confirm-block h3 {
+      margin: 0 0 .75rem;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--muted);
+    }
+    .confirm-block .data-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem 1rem;
+      margin-bottom: 1rem;
+    }
+    .confirm-block .data-list .item {
+      display: flex;
+      flex-direction: column;
+    }
+    .confirm-block .data-list .item .k {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .confirm-block .data-list .item .v {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .confirm-block .data-list .item .v.dni {
+      font-family: 'Courier New', monospace;
+      font-size: 1.15rem;
+      letter-spacing: .12em;
+      color: var(--primary);
+    }
+    .confirm-block .dni-input-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+    }
+    .confirm-block .dni-input-wrap label {
+      font-weight: 700;
+      font-size: .95rem;
+      color: #0f172a;
+    }
+    .confirm-block .dni-input-wrap input {
+      width: 100%;
+      height: 64px;
+      text-align: center;
+      font-size: 1.8rem;
+      letter-spacing: .35rem;
+      font-family: 'Courier New', monospace;
+      border: 2px solid #cbd5e1;
+      border-radius: 14px;
+      background: white;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .confirm-block .dni-input-wrap input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, .15);
+    }
+    .confirm-block .dni-input-wrap input.error {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(217, 48, 37, .15);
+    }
+    .confirm-block .dni-input-wrap .hint {
+      font-size: .82rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ---------- Acciones ---------- */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .75rem;
+    }
+    .actions button {
+      border: 0;
+      border-radius: 14px;
+      height: 64px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0 1rem;
+      transition: background .15s ease, opacity .15s ease;
+    }
+    .actions .btn-secondary { background: #e5e7eb; color: #111827; }
+    .actions .btn-secondary:hover { background: #d1d5db; }
+    .actions .btn-primary { background: var(--primary); color: white; }
+    .actions .btn-primary:hover { background: var(--primary-dark); }
+    .actions .btn-primary[disabled] {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 480px) {
+      .actions { grid-template-columns: 1fr; }
+      .topbar { flex-wrap: wrap; }
+      .card { min-height: 320px; }
+      .confirm-block .data-list { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra superior -->
+  <header class="topbar">
+    <div class="step">
+      Cédula electrónica ·
+      <span class="muted">Paso {{ paso }} de {{ total }}:</span>
+      {{ tipo.nombre }}
+    </div>
+    <form method="post" action="{% url 'kiosk_espera' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit"
+              class="btn-exit"
+              onclick="return confirm('¿Cancelar la votación en curso?');">
+        Salir
+      </button>
+    </form>
+  </header>
+
+  <!-- Barra de identificación del alumno -->
+  {% if estudiante %}
+  <div class="student-bar" role="region" aria-label="Datos del elector">
+    <div class="student-field">
+      <span class="lbl">Elector:</span>
+      <span class="val">
+        {{ estudiante.apellido_paterno }} {{ estudiante.apellido_materno }},
+        {{ estudiante.nombres }}
+      </span>
+    </div>
+    <div class="student-field highlight">
+      <span class="lbl">DNI:</span>
+      <span class="val">{{ estudiante.numero_documento }}</span>
+    </div>
+    <div class="student-field">
+      <span class="lbl">Grado/Secc:</span>
+      <span class="val">{% if estudiante.grado_seccion %}{{ estudiante.grado_seccion.grado }} {{ estudiante.grado_seccion.seccion }}{% else %}—{% endif %}</span>
+    </div>
+    <div class="student-field">
+      <span class="lbl">Mesa:</span>
+      <span class="val">{{ estudiante.mesa.numero_mesa|default:"—" }}</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Progreso por pasos -->
+  <div class="progress-steps" aria-hidden="true">
+    {% for _ in "x"|rjust:total|make_list %}
+      <div class="dot {% if forloop.counter <= paso %}active{% endif %}"></div>
+    {% endfor %}
+  </div>
+
+  <main>
+    <h1 class="prompt">
+      Seleccione la lista de su preferencia para
+      <strong>{{ tipo.nombre }}</strong>:
+    </h1>
+
+    {% if error %}
+      <div class="error-banner" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <div class="cards" role="list">
+      {% for lista in listas %}
+        <div class="card"
+             role="listitem"
+             tabindex="0"
+             data-lista-id="{{ lista.id }}"
+             data-lista-nombre="{{ lista.nombre }}"
+             data-lista-desc="{{ lista.descripcion }}"
+             aria-label="Seleccionar {{ lista.nombre }}">
+          <div class="photo" aria-hidden="true">
+            {% if lista.foto %}
+              <img src="{{ lista.foto.url }}" alt="{{ lista.nombre }}" />
+            {% else %}
+              🗳️
+            {% endif %}
+          </div>
+          <div class="list-name">{{ lista.nombre }}</div>
+          {% if lista.descripcion %}
+            <div class="desc">{{ lista.descripcion }}</div>
+          {% else %}
+            <div class="desc"></div>
+          {% endif %}
+          <button type="button" class="select" tabindex="-1">Seleccionar</button>
+        </div>
+      {% empty %}
+        <div class="empty-state">
+          No hay listas activas para <strong>{{ tipo.nombre }}</strong>.<br>
+          Contacte con el comité electoral.
+        </div>
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- Formulario oculto -->
+  <form id="vote-form" method="post" action="{% url 'kiosk_wizard_paso' %}" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" name="lista_id" id="selected-lista-id" />
+    <input type="hidden" name="dni_confirmacion" id="dni-confirmacion-hidden" />
+  </form>
+
+  <!-- Overlay de confirmación -->
+  <div class="overlay" id="confirm-overlay" role="dialog" aria-modal="true"
+       aria-labelledby="confirm-title" aria-hidden="true"
+       data-es-ultimo-paso="{% if es_ultimo_paso %}1{% else %}0{% endif %}"
+       data-dni-esperado="{{ estudiante.numero_documento|default:'' }}">
+    <div class="modal">
+      <h2 id="confirm-title">¡Confirme su voto!</h2>
+      <p class="subtitle">
+        Ha seleccionado para <strong>{{ tipo.nombre }}</strong>:
+      </p>
+      <div class="selected-label" id="confirm-lista">—</div>
+
+      {% if es_ultimo_paso %}
+        <!-- Bloque especial de último paso: datos + DNI -->
+        <div class="confirm-block">
+          <h3>Datos del elector</h3>
+          <div class="data-list">
+            <div class="item">
+              <span class="k">Apellidos y nombres</span>
+              <span class="v">
+                {{ estudiante.apellido_paterno }} {{ estudiante.apellido_materno }},
+                {{ estudiante.nombres }}
+              </span>
+            </div>
+            <!--
+            <div class="item">
+              <span class="k">DNI registrado</span>
+              <span class="v dni">{{ estudiante.numero_documento }}</span>
+            </div>
+            -->
+            <div class="item">
+              <span class="k">Grado / Sección</span>
+              <span class="v">{% if estudiante.grado_seccion %}{{ estudiante.grado_seccion.grado }} {{ estudiante.grado_seccion.seccion }}{% else %}—{% endif %}</span>
+            </div>
+            <div class="item">
+              <span class="k">Mesa</span>
+              <span class="v">{{ estudiante.mesa.numero_mesa|default:"—" }}</span>
+            </div>
+          </div>
+
+          <div class="dni-input-wrap">
+            <label for="dni-input-confirm">
+              Para emitir su voto, ingrese su DNI:
+            </label>
+            <input type="text"
+                   id="dni-input-confirm"
+                   inputmode="numeric"
+                   maxlength="8"
+                   pattern="\d{8}"
+                   autocomplete="off"
+                   placeholder="________" />
+            <div class="hint">
+              Debe coincidir con el DNI registrado arriba.
+            </div>
+          </div>
+        </div>
+
+        <p class="warning">
+          ¿Está seguro de su elección? Una vez confirmado, no podrá cambiar
+          su voto en esta categoría.
+        </p>
+
+        <div class="actions">
+          <button type="button" class="btn-secondary" id="btn-cambiar">
+            Cambiar opción
+          </button>
+          <button type="button" class="btn-primary" id="btn-confirmar" disabled>
+            Sí, emitir mi voto
+          </button>
+        </div>
+
+      {% else %}
+        <!-- Overlay normal para pasos intermedios -->
+        <p class="warning">
+          ¿Está seguro de su elección? Una vez confirmado, no podrá cambiar
+          su voto en esta categoría.
+        </p>
+        <div class="actions">
+          <button type="button" class="btn-secondary" id="btn-cambiar">
+            Cambiar opción
+          </button>
+          <button type="button" class="btn-primary" id="btn-confirmar">
+            Sí, confirmar y continuar
+          </button>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var overlay       = document.getElementById("confirm-overlay");
+      var confirmLabel  = document.getElementById("confirm-lista");
+      var hiddenId      = document.getElementById("selected-lista-id");
+      var hiddenDni     = document.getElementById("dni-confirmacion-hidden");
+      var form          = document.getElementById("vote-form");
+      var btnConfirmar  = document.getElementById("btn-confirmar");
+      var btnCambiar    = document.getElementById("btn-cambiar");
+
+      var esUltimoPaso = overlay.dataset.esUltimoPaso === "1";
+      var dniEsperado  = (overlay.dataset.dniEsperado || "").trim();
+
+      var dniInput = document.getElementById("dni-input-confirm");
+
+      var selectedId = null;
+
+      function openOverlay(card) {
+        selectedId = card.dataset.listaId;
+        var nombre = card.dataset.listaNombre || "";
+        var desc   = card.dataset.listaDesc   || "";
+        confirmLabel.textContent = desc ? (nombre + " — " + desc) : nombre;
+
+        overlay.classList.add("show");
+        overlay.setAttribute("aria-hidden", "false");
+
+        if (esUltimoPaso && dniInput) {
+          dniInput.value = "";
+          dniInput.classList.remove("error");
+          btnConfirmar.disabled = true;
+          setTimeout(function () { dniInput.focus(); }, 100);
+        } else {
+          btnConfirmar.disabled = false;
+          btnConfirmar.focus();
+        }
+      }
+
+      function closeOverlay() {
+        overlay.classList.remove("show");
+        overlay.setAttribute("aria-hidden", "true");
+        selectedId = null;
+        if (dniInput) {
+          dniInput.value = "";
+          dniInput.classList.remove("error");
+        }
+      }
+
+      // Cards clickeables
+      document.querySelectorAll(".card").forEach(function (card) {
+        card.addEventListener("click", function () { openOverlay(card); });
+        card.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+            e.preventDefault();
+            openOverlay(card);
+          }
+        });
+      });
+
+      btnCambiar.addEventListener("click", closeOverlay);
+
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay) closeOverlay();
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && overlay.classList.contains("show")) {
+          closeOverlay();
+        }
+      });
+
+      // Validación en vivo del DNI (solo último paso)
+      if (esUltimoPaso && dniInput) {
+        dniInput.addEventListener("input", function () {
+          // Solo dígitos
+          dniInput.value = dniInput.value.replace(/\D/g, "").slice(0, 8);
+
+          var val = dniInput.value;
+          var completo = val.length === 8;
+          var coincide = (val === dniEsperado);
+
+          if (val.length === 8) {
+            if (coincide) {
+              dniInput.classList.remove("error");
+              btnConfirmar.disabled = false;
+            } else {
+              dniInput.classList.add("error");
+              btnConfirmar.disabled = true;
+            }
+          } else {
+            dniInput.classList.remove("error");
+            btnConfirmar.disabled = true;
+          }
+        });
+
+        // Enter dentro del input dispara la confirmación si es válido
+        dniInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !btnConfirmar.disabled) {
+            e.preventDefault();
+            btnConfirmar.click();
+          }
+        });
+      }
+
+      // Confirmación final
+      btnConfirmar.addEventListener("click", function () {
+        if (!selectedId || btnConfirmar.disabled) return;
+
+        if (esUltimoPaso) {
+          var val = (dniInput && dniInput.value || "").trim();
+          if (val !== dniEsperado) {
+            if (dniInput) dniInput.classList.add("error");
+            return;
+          }
+          if (hiddenDni) hiddenDni.value = val;
+        }
+
+        btnConfirmar.disabled = true;
+        btnConfirmar.textContent = esUltimoPaso
+          ? "Emitiendo voto…"
+          : "Confirmando…";
+        hiddenId.value = selectedId;
+        form.submit();
+      });
+
+      // Foco inicial
+      var firstCard = document.querySelector(".card");
+      if (firstCard) firstCard.focus();
+
+      // bfcache
+      window.addEventListener("pageshow", function (e) {
+        if (e.persisted) {
+          closeOverlay();
+          btnConfirmar.disabled = esUltimoPaso;
+          btnConfirmar.textContent = esUltimoPaso
+            ? "Sí, emitir mi voto"
+            : "Sí, confirmar y continuar";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
