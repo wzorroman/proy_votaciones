@@ -1,0 +1,59 @@
+# Control de versiones
+.git
+.gitignore
+.gitattributes
+
+# Entornos virtuales y dependencias locales
+venv/
+.venv/
+env/
+__pypackages__/
+
+# Archivos de base de datos (se omite db.sqlite3 segun requerimiento)
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+
+# Variables de entorno (se inyectan en tiempo de ejecucion)
+.env
+.env.*
+!.env.example
+
+# Bytecode y caches de Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Cache de tests y type checkers
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# IDEs
+.idea/
+.vscode/
+.spyderproject
+.spyproject
+
+# Logs
+*.log
+pip-log.txt
+
+# Archivos generados por Django
+staticfiles/
+
+# Documentacion y archivos de desarrollo
+README.md
+docs/
+
+# Media subida por usuarios (opcional: descomentar si quieres persistirla dentro del contenedor)
+# media/
+
+# Sistema y archivos temporales
+.DS_Store
+Thumbs.db
